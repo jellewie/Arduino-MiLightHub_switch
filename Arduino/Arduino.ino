@@ -25,11 +25,10 @@ const MiLight MilightLight1  = {"0xF001", "rgb_cct", 2};
 const MiLight MilightLight2  = {"0xF002", "rgb_cct", 1};
 
 const MiLight LightA = MilightLight1;                         //What light to control
-Pin_Switch SwitchAPin = {34, 35, 32, 33, 21, 19, 18,  5};   //Orginal layout
-//Pin_Switch SwitchAPin = {35, 33, 34, 32, 19,  5, 21, 18};   //case 90  clockwise to PCB
-//Pin_Switch SwitchAPin = {33, 32, 35, 34,  5, 18, 19, 21};   //case 180 clockwise to PCB
-//Pin_Switch SwitchAPin = {32, 34, 33, 35, 18, 21,  5, 19};   //case 270 clockwise to PCB
-Switch SwitchA = SwitchAPin;
+Switch SwitchA = Pin_Switch({34, 35, 32, 33, 21, 19, 18,  5});   //Orginal layout
+//Switch SwitchA = Pin_Switch({35, 33, 34, 32, 19,  5, 21, 18});   //case 90  clockwise to PCB
+//Switch SwitchA = Pin_Switch({33, 32, 35, 34,  5, 18, 19, 21});   //case 180 clockwise to PCB
+//Switch SwitchA = Pin_Switch({32, 34, 33, 35, 18, 21,  5, 19});   //case 270 clockwise to PCB
 String CommandsA[Amount_Buttons] = {"{\"commands\":[\"toggle\"]}",
                                     "{\"brightness\":1,\"color\":\"255,0,0\",\"state\":\"On\"}",
                                     "{\"brightness\":128,\"color\":\"255,0,0\",\"state\":\"On\"}",
@@ -37,11 +36,10 @@ String CommandsA[Amount_Buttons] = {"{\"commands\":[\"toggle\"]}",
                                    };
 #ifdef SecondSwitch
 const MiLight LightB = MilightLight2;                         //What light to control
-Pin_Switch SwitchBPin = {26, 27, 14, 12, 23, 22,  4, 15};   //Orginal layout
-//Pin_Switch SwitchBPin = {27, 12, 26, 14, 22, 15, 23,  4};   //case 90  clockwise to PCB
-//Pin_Switch SwitchBPin = {12, 14, 27, 26, 15,  4, 22, 23};   //case 180 clockwise to PCB
-//Pin_Switch SwitchBPin = {14, 26, 12, 27,  4, 23, 15, 22};   //case 270 clockwise to PCB
-Switch SwitchB = SwitchBPin;
+Switch SwitchB = Pin_Switch({26, 27, 14, 12, 23, 22,  4, 15});   //Orginal layout
+//Switch SwitchB = Pin_Switch({27, 12, 26, 14, 22, 15, 23,  4});   //case 90  clockwise to PCB
+//Switch SwitchB = Pin_Switch({12, 14, 27, 26, 15,  4, 22, 23});   //case 180 clockwise to PCB
+//Switch SwitchB = Pin_Switch({14, 26, 12, 27,  4, 23, 15, 22});   //case 270 clockwise to PCB
 String CommandsB[Amount_Buttons] = {"{\"commands\":[\"toggle\"]}",
                                     "{\"brightness\":1,\"color\":\"255,0,0\",\"state\":\"On\"}",
                                     "{\"brightness\":128,\"color\":\"255,0,0\",\"state\":\"On\"}",
@@ -60,15 +58,15 @@ void setup() {
   //===========================================================================
   //Attach interupts to the button pins so we can responce if they change
   //===========================================================================
-  attachInterrupt(SwitchAPin.Button[0], ISR_A0, CHANGE);
-  attachInterrupt(SwitchAPin.Button[1], ISR_A1, CHANGE);
-  attachInterrupt(SwitchAPin.Button[2], ISR_A2, CHANGE);
-  attachInterrupt(SwitchAPin.Button[3], ISR_A3, CHANGE);
+  attachInterrupt(SwitchA.Data.Button[0], ISR_A0, CHANGE);
+  attachInterrupt(SwitchA.Data.Button[1], ISR_A1, CHANGE);
+  attachInterrupt(SwitchA.Data.Button[2], ISR_A2, CHANGE);
+  attachInterrupt(SwitchA.Data.Button[3], ISR_A3, CHANGE);
 #ifdef SecondSwitch
-  attachInterrupt(SwitchBPin.Button[0], ISR_B0, CHANGE);
-  attachInterrupt(SwitchBPin.Button[1], ISR_B1, CHANGE);
-  attachInterrupt(SwitchBPin.Button[2], ISR_B2, CHANGE);
-  attachInterrupt(SwitchBPin.Button[3], ISR_B3, CHANGE);
+  attachInterrupt(SwitchB.Data.Button[0], ISR_B0, CHANGE);
+  attachInterrupt(SwitchB.Data.Button[1], ISR_B1, CHANGE);
+  attachInterrupt(SwitchB.Data.Button[2], ISR_B2, CHANGE);
+  attachInterrupt(SwitchB.Data.Button[3], ISR_B3, CHANGE);
 #endif //SecondSwitch
   //===========================================================================
   //Wait for all buttons to be NOT pressed
