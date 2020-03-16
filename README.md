@@ -37,7 +37,7 @@ It tries 5 times, or 2 times connecting, or 1 time if send Json is wrong
 (Button 2 long press) Enable Settings menu (APMODE) though it's IP on its WIFI (will hide password by default), just reboot ESP when your done to disable it
 (Button extreme long press) Hold any button for 10s to reboot the ESP
 
-# Images!
-[Working GIF](https://github.com/jellewie/Arduino-MiLightHub_switch/blob/master/Untitled%20Project.gif)
-[buttons to the wall](https://raw.githubusercontent.com/jellewie/Arduino-MiLightHub_switch/master/3D/Single.jpg)
-[Double buttons settup](https://raw.githubusercontent.com/jellewie/Arduino-MiLightHub_switch/master/3D/Double.jpg)
+# Images
+![Working GIF](https://github.com/jellewie/Arduino-MiLightHub_switch/blob/master/Untitled%20Project.gif)
+![buttons to the wall](https://raw.githubusercontent.com/jellewie/Arduino-MiLightHub_switch/master/3D/Single.jpg)
+![Double buttons settup](https://raw.githubusercontent.com/jellewie/Arduino-MiLightHub_switch/master/3D/Double.jpg)
