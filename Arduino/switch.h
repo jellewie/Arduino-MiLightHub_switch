@@ -22,15 +22,16 @@ class Switch {
     bool ButtonLast[Amount_Buttons];
     bool ButtonLastLong[Amount_Buttons];
     bool ButtonCurrent[Amount_Buttons];
-    unsigned long ButtonStartTime[Amount_Buttons];     //Array with the button pressed time (to calculate long press)
-    Pin_Switch Data;
+    unsigned long ButtonStartTime[Amount_Buttons];     	//Array with the button pressed time (to calculate long press)
+    Pin_Switch Data;                          			//To store the pointer to the (group) of pins of this instance of buttons
+
   public:                                 //public variables/functions (these can be acces from the normal sketch)
-    Switch(const Pin_Switch Input) {
-      this->Data = Input;
-      for (byte i = 0; i < Amount_Buttons; i++) {
-        pinMode(Data.Button[i], INPUT);   //Set the button pin as INPUT
-        if (Data.LED[i] != 0)             //If a LED pin is given
-          pinMode(Data.LED[i], OUTPUT);   //Set the LED pin as output
+    Switch(const Pin_Switch Input) {              		//Called to initialize
+      this->Data = Input;								//Set the pointer, so we point to the pins
+      for (byte i = 0; i < Amount_Buttons; i++) {	    //for each button
+        pinMode(Data.Button[i], INPUT);   				//Set the button pin as INPUT
+        if (Data.LED[i] != 0)             				//If a LED pin is given
+          pinMode(Data.LED[i], OUTPUT);   				//Set the LED pin as output
       }
     }
     Button_Time CheckButtons() {
