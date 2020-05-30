@@ -167,7 +167,7 @@ void WiFiManager_handle_Settings() {
     int j = WiFiManager_ArguName.toInt();
     if (j > 0 and j < 255 and WiFiManager_ArgValue != "") {
       if (WiFiManager_Set_Value(j, WiFiManager_ArgValue))
-        WiFiManager_MSG += "Succesfull '" + WiFiManager_ArguName + "' = '" + WiFiManager_ArgValue + "'" + char(13);
+        WiFiManager_MSG += "Succesfull '" + WiFiManager_ArguName + "'='" + WiFiManager_ArgValue + "'" + char(13);
       else
         WiFiManager_MSG += "ERROR Set; '" + WiFiManager_ArguName + "'='" + WiFiManager_ArgValue + "'" + char(13);
     } else {
