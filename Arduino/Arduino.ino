@@ -23,10 +23,7 @@ WebServer server(80);
 //#define SerialEnabled
 //#define SecondSwitch
 
-const MiLight MilightLightA  = {"0xF001", "rgb_cct", 1};
-const MiLight MilightLightB  = {"0xF002", "rgb_cct", 1};
-
-const MiLight LightA = MilightLightA;                         //What light to control
+MiLight LightA = {"0xF001", "rgb_cct", 1};                         //What light to control
 Button SwitchA[4] = {buttons({34, 21}), buttons({35, 19}), buttons({32, 18}), buttons({33, 5})};   //Orginal layout
 //Button SwitchA[4] = {buttons({35, 19}), buttons({33,  5}), buttons({34, 21}), buttons({32, 18})};   //case 90  clockwise to PCB
 //Button SwitchA[4] = {buttons({33,  5}), buttons({32, 18}), buttons({35, 19}), buttons({34, 21})};   //case 180 clockwise to PCB
@@ -38,7 +35,7 @@ String CommandsA[Amount_Buttons] = {"{\"commands\":[\"toggle\"]}",
                                     "{\"brightness\":255,\"color\":\"255,255,255\",\"state\":\"On\"}"
                                    };
 #ifdef SecondSwitch
-const MiLight LightB = MilightLightB;                         //What light to control
+MiLight LightB = {"0xF002", "rgb_cct", 1};                         //What light to control
 Button SwitchB[4] = {buttons({34, 21}), buttons({35, 19}), buttons({32, 18}), buttons({33, 5})};   //Orginal layout
 //Button SwitchB[4] = {buttons({35, 19}), buttons({33,  5}), buttons({34, 21}), buttons({32, 18})};   //case 90  clockwise to PCB
 //Button SwitchB[4] = {buttons({33,  5}), buttons({32, 18}), buttons({35, 19}), buttons({34, 21})};   //case 180 clockwise to PCB

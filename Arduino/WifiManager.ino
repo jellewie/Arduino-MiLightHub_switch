@@ -30,9 +30,9 @@
 #endif //SerialEnabled
 
 #ifdef SecondSwitch
-const String WiFiManager_VariableNames[] {"SSID", "Password", "MiLight_IP", "Button A1", "Button A2", "Button A3", "Button A4", "Button B1", "Button B2", "Button B3", "Button B4"};
+const String WiFiManager_VariableNames[] {"SSID", "Password", "MiLight_IP", "Button A1", "Button A2", "Button A3", "Button A4", "LightA ID", "LightA type", "LightA group", "Button B1", "Button B2", "Button B3", "Button B4", "LightB ID", "LightB type", "LightB group"};
 #else
-const String WiFiManager_VariableNames[] {"SSID", "Password", "MiLight_IP", "Button A1", "Button A2", "Button A3", "Button A4"};
+const String WiFiManager_VariableNames[] {"SSID", "Password", "MiLight_IP", "Button A1", "Button A2", "Button A3", "Button A4", "LightA ID", "LightA type", "LightA group"};
 #endif //SecondSwitch
 const byte WiFiManager_Settings = sizeof(WiFiManager_VariableNames) / sizeof(WiFiManager_VariableNames[0]); //Why filling this in if we can automate that? :)
 const byte WiFiManager_EEPROM_SIZE_SSID = 16;    //Howmany characters can be in the SSID
@@ -250,7 +250,12 @@ void WiFiManager_Set_Value(byte WiFiManager_ValueID, String WiFiManager_Temp) {
       WiFiManager_Temp.toCharArray(ssid, WiFiManager_Temp.length() + 1);
       break;
     case 2:
-      WiFiManager_Temp.toCharArray(password, WiFiManager_Temp.length() + 1);
+      for (byte i = 0; i < String(WiFiManager_Temp).length(); i++) {
+        if (WiFiManager_Temp.charAt(i) != '*') {              //if the password is set (and not just the '*****' we have given the client)
+          WiFiManager_Temp.toCharArray(password, WiFiManager_Temp.length() + 1);
+          i = String(WiFiManager_Temp).length();              //Stop for loop
+        }
+      }
       break;
     case 3:
       WiFiManager_Temp.toCharArray(MiLight_IP, 16);
@@ -267,18 +272,36 @@ void WiFiManager_Set_Value(byte WiFiManager_ValueID, String WiFiManager_Temp) {
     case 7:
       CommandsA[3] = WiFiManager_Temp;
       break;
-#ifdef SecondSwitch
     case 8:
-      CommandsB[0] = WiFiManager_Temp;
+      LightA.device_id = WiFiManager_Temp;
       break;
     case 9:
-      CommandsB[1] = WiFiManager_Temp;
+      LightA.remote_type = WiFiManager_Temp;
       break;
     case 10:
+      LightA.group_id = WiFiManager_Temp.toInt();
+      break;
+#ifdef SecondSwitch
+    case 11:
+      CommandsB[0] = WiFiManager_Temp;
+      break;
+    case 12:
+      CommandsB[1] = WiFiManager_Temp;
+      break;
+    case 13:
       CommandsB[2] = WiFiManager_Temp;
       break;
-    case 11:
+    case 14:
       CommandsB[3] = WiFiManager_Temp;
+      break;
+    case 15:
+      LightB.device_id = WiFiManager_Temp;
+      break;
+    case 16:
+      LightB.remote_type = WiFiManager_Temp;
+      break;
+    case 17:
+      LightB.group_id = WiFiManager_Temp.toInt();
       break;
 #endif //SecondSwitch
   }
@@ -315,18 +338,36 @@ String WiFiManager_Get_Value(byte WiFiManager_ValueID, bool WiFiManager_Safe) {
     case 7:
       WiFiManager_Temp_Return = CommandsA[3];
       break;
-#ifdef SecondSwitch
     case 8:
-      WiFiManager_Temp_Return = CommandsB[0];
+      WiFiManager_Temp_Return = LightA.device_id;
       break;
     case 9:
-      WiFiManager_Temp_Return = CommandsB[1];
+      WiFiManager_Temp_Return = LightA.remote_type;
       break;
     case 10:
+      WiFiManager_Temp_Return = LightA.group_id;
+      break;
+#ifdef SecondSwitch
+    case 11:
+      WiFiManager_Temp_Return = CommandsB[0];
+      break;
+    case 12:
+      WiFiManager_Temp_Return = CommandsB[1];
+      break;
+    case 13:
       WiFiManager_Temp_Return = CommandsB[2];
       break;
-    case 11:
+    case 14:
       WiFiManager_Temp_Return = CommandsB[3];
+      break;
+    case 15:
+      WiFiManager_Temp_Return = LightB.device_id;
+      break;
+    case 16:
+      WiFiManager_Temp_Return = LightB.remote_type;
+      break;
+    case 17:
+      WiFiManager_Temp_Return = LightB.group_id;
       break;
 #endif //SecondSwitch
   }

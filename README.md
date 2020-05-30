@@ -9,12 +9,11 @@ ESP8266 with esp8266_milight_hub (and it's IP ofc.)
 # How it works
 Make sure the esp8266_milight_hub is already set-up and working, and you know it's IP.
 Make sure you have an ESP with the PCB, you can also make one yourself but mine is linked in this project (make sure to read the schematics, they should explain themself)
-make sure to enable SecondSwitch if you have 2 sets of 4 buttons
-Make sure to set MilightLight properly before upload (this can't be done later), set the LightID, mode and group (see definition of 'MilightLightA')
+Make sure to enable SecondSwitch if you have 2 sets of 4 buttons (this can't be done later).
 
-You can either setup the IP and passwords and such in the code, but you can also just upload the sketch and power it on and set it up: 
+You can either setup the settings like SSID and passwords and such in the code, but you can also just upload the sketch and power it on and set it up: 
 It will go into APMODE (since it can’t connect to WIFI) connect to it and go to it's IP (192.168.4.1)
-You will get a window with SSID Wi-Fi name and password, but also the hub IP, fill these in and submit. 
+You will get a window with SSID Wi-Fi name, password, the milight hub IP, LightID, LightType, and lightGroup. Change or fill these in and submit. 
 The ESP will save these settings and reboot (note that the 4 commands to send to the hub are also stored in here) (Leaving fields blank will skip updating them)
 
 # LED feedback
