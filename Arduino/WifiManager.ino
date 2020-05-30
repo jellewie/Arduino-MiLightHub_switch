@@ -166,11 +166,13 @@ void WiFiManager_handle_Settings() {
     WiFiManager_ArgValue.replace("'", "\"");            //Make sure to change char(') since we can't use that, change to char(")
     int j = WiFiManager_ArguName.toInt();
     if (j > 0 and j < 255 and WiFiManager_ArgValue != "") {
-      WiFiManager_Set_Value(j, WiFiManager_ArgValue);
-      WiFiManager_MSG += "Succesfull '" + WiFiManager_ArguName + "' = '" + WiFiManager_ArgValue + "'" + char(13);
+      if (WiFiManager_Set_Value(j, WiFiManager_ArgValue))
+        WiFiManager_MSG += "Succesfull '" + WiFiManager_ArguName + "' = '" + WiFiManager_ArgValue + "'" + char(13);
+      else
+        WiFiManager_MSG += "ERROR Set; '" + WiFiManager_ArguName + "'='" + WiFiManager_ArgValue + "'" + char(13);
     } else {
       WiFiManager_Code = 422;   //Flag we had a error
-      WiFiManager_MSG += "ERROR; '" + WiFiManager_ArguName + "'='" + WiFiManager_ArgValue + "'" + char(13);
+      WiFiManager_MSG += "ERROR ID; '" + WiFiManager_ArguName + "'='" + WiFiManager_ArgValue + "'" + char(13);
     }
   }
   WiFiManager_WaitOnAPMode = false;     //Flag we have input data, and we can stop waiting in APmode on data
@@ -241,7 +243,7 @@ bool WiFiManager_Connect(int WiFiManager_TimeOutMS) {
   }
   return true;
 }
-void WiFiManager_Set_Value(byte WiFiManager_ValueID, String WiFiManager_Temp) {
+bool WiFiManager_Set_Value(byte WiFiManager_ValueID, String WiFiManager_Temp) {
 #ifdef WiFiManager_SerialEnabled
   Serial.println("WM: Set current value: " + String(WiFiManager_ValueID) + " = " + WiFiManager_Temp);
 #endif //WiFiManager_SerialEnabled
@@ -253,9 +255,10 @@ void WiFiManager_Set_Value(byte WiFiManager_ValueID, String WiFiManager_Temp) {
       for (byte i = 0; i < String(WiFiManager_Temp).length(); i++) {
         if (WiFiManager_Temp.charAt(i) != '*') {              //if the password is set (and not just the '*****' we have given the client)
           WiFiManager_Temp.toCharArray(password, WiFiManager_Temp.length() + 1);
-          i = String(WiFiManager_Temp).length();              //Stop for loop
+          return true;                                        //Stop for loop
         }
       }
+      return false;                                           //Not set, the password was just '*****'
       break;
     case 3:
       WiFiManager_Temp.toCharArray(MiLight_IP, 16);
@@ -305,6 +308,7 @@ void WiFiManager_Set_Value(byte WiFiManager_ValueID, String WiFiManager_Temp) {
       break;
 #endif //SecondSwitch
   }
+  return true;
 }
 String WiFiManager_Get_Value(byte WiFiManager_ValueID, bool WiFiManager_Safe) {
 #ifdef WiFiManager_SerialEnabled
