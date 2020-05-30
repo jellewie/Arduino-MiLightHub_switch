@@ -25,8 +25,6 @@
 #define WiFiManager_APSSID "ESP32"
 #define WiFiManager_EEPROM_SIZE 512           //Max Amount of chars of 'SSID + PASSWORD' (+1) (+extra custom vars) 
 #define WiFiManager_EEPROM_Seperator char(9)  //use 'TAB' as a seperator 
-#define WiFiManager_LED LED_BUILTIN           //The LED to give feedback on (like blink on error)
-
 #ifdef SerialEnabled
 #define WiFiManager_SerialEnabled             //Disable to not send Serial debug feedback
 #endif //SerialEnabled
@@ -36,9 +34,9 @@ const String WiFiManager_VariableNames[] {"SSID", "Password", "MiLight_IP", "But
 #else
 const String WiFiManager_VariableNames[] {"SSID", "Password", "MiLight_IP", "Button A1", "Button A2", "Button A3", "Button A4"};
 #endif //SecondSwitch
-const static byte WiFiManager_Settings = sizeof(WiFiManager_VariableNames) / sizeof(WiFiManager_VariableNames[0]); //Why filling this in if we can automate that? :)
-const static byte WiFiManager_EEPROM_SIZE_SSID = 16;    //Howmany characters can be in the SSID
-const static byte WiFiManager_EEPROM_SIZE_PASS = 16;
+const byte WiFiManager_Settings = sizeof(WiFiManager_VariableNames) / sizeof(WiFiManager_VariableNames[0]); //Why filling this in if we can automate that? :)
+const byte WiFiManager_EEPROM_SIZE_SSID = 16;    //Howmany characters can be in the SSID
+const byte WiFiManager_EEPROM_SIZE_PASS = 16;
 
 bool WiFiManager_WaitOnAPMode = true;       //This holds the flag if we should wait in Apmode for data
 bool WiFiManager_SettingsEnabled = false;   //This holds the flag to enable settings, else it would not responce to settings commands
@@ -56,13 +54,32 @@ char password[WiFiManager_EEPROM_SIZE_PASS] = "";
 #include <EEPROM.h>
 
 byte WiFiManager_Start() {
-  pinMode(WiFiManager_LED, OUTPUT);
-  digitalWrite(WiFiManager_LED, HIGH);
+  WiFiManager_Status_Start();
   //starts wifi stuff, only returns when connected. will create Acces Point when needed
   /* <Return> <meaning>
      2 Can't begin EEPROM
      3 Can't write [all] data to EEPROM
   */
+  if (byte temp = LoadData()) return temp;
+  bool WiFiManager_Connected = false;
+  while (!WiFiManager_Connected) {
+    if ((strlen(ssid) == 0 or strlen(password) == 0))
+      WiFiManager_APMode();                 //No good ssid or password, entering APmode
+    else {
+      if (WiFiManager_Connect(WiFiManager_ConnectionTimeOutMS)) //try to connected to ssid password
+        WiFiManager_Connected = true;
+      else
+        password[0] = (char)0;              //Clear this so we will enter AP mode (*just clearing first bit)
+    }
+  }
+  WiFiManager_Status_Done();
+#ifdef WiFiManager_SerialEnabled
+  Serial.print("WM: My ip = ");
+  Serial.println(WiFi.localIP()); //Just send it's IP on boot to let you know
+#endif //WiFiManager_SerialEnabled
+  return 1;
+}
+byte LoadData() {     //Only load data from EEPROM to memory
   if (!EEPROM.begin(WiFiManager_EEPROM_SIZE))
     return 2;
   String WiFiManager_a = WiFiManager_LoadEEPROM();
@@ -80,23 +97,7 @@ byte WiFiManager_Start() {
       WiFiManager_a = WiFiManager_a.substring(j + 1);
     }
   }
-  bool WiFiManager_Connected = false;
-  while (!WiFiManager_Connected) {
-    if ((strlen(ssid) == 0 or strlen(password) == 0))
-      WiFiManager_APMode();                 //No good ssid or password, entering APmode
-    else {
-      if (WiFiManager_Connect(WiFiManager_ConnectionTimeOutMS)) //try to connected to ssid password
-        WiFiManager_Connected = true;
-      else
-        password[0] = (char)0;              //Clear this so we will enter AP mode (*just clearing first bit)
-    }
-  }
-  digitalWrite(WiFiManager_LED, LOW);
-#ifdef WiFiManager_SerialEnabled
-  Serial.print("WM: ");
-  Serial.println(WiFi.localIP()); //Just send it's IP on boot to let you know
-#endif //WiFiManager_SerialEnabled
-  return 1;
+  return 0;
 }
 String WiFiManager_LoadEEPROM() {
   String WiFiManager_Value;
@@ -119,7 +120,9 @@ String WiFiManager_LoadEEPROM() {
     Serial.print("_" + String(char(WiFiManager_Input)) + "_");
 #endif //WiFiManager_SerialEnabled
   }
+#ifdef WiFiManager_SerialEnabled
   Serial.println();
+#endif //WiFiManager_SerialEnabled
   return String(WiFiManager_EEPROM_Seperator);  //ERROR; [maybe] not enough space
 }
 bool WiFiManager_WriteEEPROM() {
@@ -203,23 +206,23 @@ byte WiFiManager_APMode() {
   */
   if (!WiFi.softAP(WiFiManager_APSSID))
     return 2;
-  WiFiManager_SettingsEnabled = true; //Flag we need to responce to settings commands
+  WiFiManager_EnableSetup(true); //Flag we need to responce to settings commands
   WiFiManager_StartServer();          //start server (if we havn't already)
 #ifdef WiFiManager_SerialEnabled
   Serial.print("WM: APMode on; SSID=" + String(WiFiManager_APSSID) + "ip=");
   Serial.println(WiFi.softAPIP());
 #endif //WiFiManager_SerialEnabled
   while (WiFiManager_WaitOnAPMode) {
-    BlinkEveryMs(WiFiManager_LED, 100);  //Let the LED blink to show we are not connected
+    if (TickEveryMS(100)) WiFiManager_Status_Blink(); //Let the LED blink to show we are not connected
     server.handleClient();
   }
   WiFiManager_WaitOnAPMode = true;      //reset flag for next time
-  WiFiManager_SettingsEnabled = false;  //Flag to stop responce to settings commands
+  WiFiManager_EnableSetup(false);  //Flag to stop responce to settings commands
   return 1;
 }
 bool WiFiManager_Connect(int WiFiManager_TimeOutMS) {
 #ifdef WiFiManager_SerialEnabled
-  Serial.println("WM: Connect to ssid='" + String(ssid) + "' password='" + String(password) + "'");
+  Serial.println("WM: Connecting to ssid='" + String(ssid) + "' password='" + String(password) + "'");
 #endif //WiFiManager_SerialEnabled
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
@@ -228,15 +231,19 @@ bool WiFiManager_Connect(int WiFiManager_TimeOutMS) {
 #endif
   unsigned long WiFiManager_StopTime = millis() + WiFiManager_TimeOutMS;
   while (WiFi.status() != WL_CONNECTED) {
-    if (WiFiManager_StopTime < millis())     //If we are in overtime
+    if (WiFiManager_StopTime < millis()) {    //If we are in overtime
+#ifdef WiFiManager_SerialEnabled
+      Serial.println("WM: Could not connect withing ='" + String(WiFiManager_TimeOutMS) + "'ms to given WIFI, aborting :" + String(WiFi.status()));
+#endif //WiFiManager_SerialEnabled
       return false;
-    BlinkEveryMs(WiFiManager_LED, 500);  //Let the LED blink to show we are trying to connect
+    }
+    if (TickEveryMS(500)) WiFiManager_Status_Blink(); //Let the LED blink to show we are trying to connect
   }
   return true;
 }
 void WiFiManager_Set_Value(byte WiFiManager_ValueID, String WiFiManager_Temp) {
 #ifdef WiFiManager_SerialEnabled
-  Serial.println("WM: Set value " + String(WiFiManager_ValueID) + " = " + WiFiManager_Temp);
+  Serial.println("WM: Set current value: " + String(WiFiManager_ValueID) + " = " + WiFiManager_Temp);
 #endif //WiFiManager_SerialEnabled
   switch (WiFiManager_ValueID) {
     case 1:
@@ -278,7 +285,7 @@ void WiFiManager_Set_Value(byte WiFiManager_ValueID, String WiFiManager_Temp) {
 }
 String WiFiManager_Get_Value(byte WiFiManager_ValueID, bool WiFiManager_Safe) {
 #ifdef WiFiManager_SerialEnabled
-  Serial.print("WM: Get value " + String(WiFiManager_ValueID));
+  Serial.print("WM: Get current value of: " + String(WiFiManager_ValueID));
 #endif //WiFiManager_SerialEnabled
   String WiFiManager_Temp_Return = "";                //Make sure to return something, if we return bad data of NULL, the HTML page will break
   switch (WiFiManager_ValueID) {
@@ -288,6 +295,10 @@ String WiFiManager_Get_Value(byte WiFiManager_ValueID, bool WiFiManager_Safe) {
     case 2:
       if (WiFiManager_Safe)                           //If's it's safe to return password.
         WiFiManager_Temp_Return += String(password);
+      else {
+        for (byte i = 0; i < String(password).length(); i++)
+          WiFiManager_Temp_Return += "*";
+      }
       break;
     case 3:
       WiFiManager_Temp_Return = String(MiLight_IP);
@@ -319,9 +330,32 @@ String WiFiManager_Get_Value(byte WiFiManager_ValueID, bool WiFiManager_Safe) {
       break;
 #endif //SecondSwitch
   }
+#ifdef WiFiManager_SerialEnabled
   Serial.println(" = " + WiFiManager_Temp_Return);
+#endif //WiFiManager_SerialEnabled
   WiFiManager_Temp_Return.replace("\"", "'");   //Make sure to change char(") since we can't use that, change to char(')
   return String(WiFiManager_Temp_Return);
+}
+
+//bool TickEveryMS(int _Delay) {
+//  static unsigned long _LastTime = 0;       //Make it so it returns 1 if called for the FIST time
+//  if (millis() > _LastTime + _Delay) {
+//    _LastTime = millis();
+//    return true;
+//  }
+//  return false;
+//}
+//Some status updates to the user
+#define WiFiManager_LED LED_BUILTIN           //The LED to give feedback on (like blink on error)
+void WiFiManager_Status_Start() {
+  pinMode(WiFiManager_LED, OUTPUT);
+  digitalWrite(WiFiManager_LED, HIGH);
+}
+void WiFiManager_Status_Done() {
+  digitalWrite(WiFiManager_LED, LOW);
+}
+void WiFiManager_Status_Blink() {
+  digitalWrite(WiFiManager_LED, !digitalRead(WiFiManager_LED));
 }
 //Some debug functions
 //void WiFiManager_ClearEEPROM() {
