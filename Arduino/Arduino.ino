@@ -34,12 +34,13 @@ String CommandsA[Amount_Buttons] = {"{\"commands\":[\"toggle\"]}",
                                     "{\"brightness\":128,\"color\":\"255,0,0\",\"state\":\"On\"}",
                                     "{\"brightness\":255,\"color\":\"255,255,255\",\"state\":\"On\"}"
                                    };
+
 #ifdef SecondSwitch
 MiLight LightB = {"0xF002", "rgb_cct", 1};                         //What light to control
-Button SwitchB[4] = {buttons({34, 21}), buttons({35, 19}), buttons({32, 18}), buttons({33, 5})};   //Orginal layout
-//Button SwitchB[4] = {buttons({35, 19}), buttons({33,  5}), buttons({34, 21}), buttons({32, 18})};   //case 90  clockwise to PCB
-//Button SwitchB[4] = {buttons({33,  5}), buttons({32, 18}), buttons({35, 19}), buttons({34, 21})};   //case 180 clockwise to PCB
-//Button SwitchB[4] = {buttons({32, 18}), buttons({34, 21}), buttons({33,  5}), buttons({35, 19})};   //case 270 clockwise to PCB
+Button SwitchB[4] = {buttons({26, 23}), buttons({27, 22}), buttons({14,  4}), buttons({12,15})};   //Orginal layout
+//Button SwitchB[4] = {buttons({27, 22}), buttons({12, 15}), buttons({26, 23}), buttons({14,  4})};   //case 90  clockwise to PCB
+//Button SwitchB[4] = {buttons({12, 15}), buttons({14,  4}), buttons({27, 22}), buttons({26, 23})};   //case 180 clockwise to PCB
+//Button SwitchB[4] = {buttons({14,  4}), buttons({26, 23}), buttons({12, 15}), buttons({27, 22})};   //case 270 clockwise to PCB
 String CommandsB[Amount_Buttons] = {"{\"commands\":[\"toggle\"]}",
                                     "{\"brightness\":1,\"color\":\"255,0,0\",\"state\":\"On\"}",
                                     "{\"brightness\":128,\"color\":\"255,0,0\",\"state\":\"On\"}",
