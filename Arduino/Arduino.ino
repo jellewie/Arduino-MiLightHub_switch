@@ -19,6 +19,7 @@
 #include <ArduinoJson.h>      //This is to pack/unpack data send to the hub
 #include <rom/rtc.h>          //This is for rtc_get_reset_reason
 WebServer server(80);
+extern void WiFiManager_CheckAndReconnectIfNeeded();
 #include "OTA.h"
 #include "functions.h"
 #include "miLight.h"
@@ -173,7 +174,6 @@ void Check(Button_Time Value, MiLight Light, String Action, byte LEDpin, byte Bu
 #endif //SerialEnabled
   if (Value.StartPress) {                               //If button is just pressed in
     if (LEDpin > 0) digitalWrite(LEDpin, HIGH);         //If a LED pin was given; Set that buttons LED on
-    byte TriesConnect = 2;
     for (int i = 5; i > 0; i--) {                       //Where i is amount of tries tries to do
       byte Feedback = SetLight(Light, Action);
       switch (Feedback) {
