@@ -14,6 +14,7 @@
 #include <ArduinoJson.h>      //This is to pack/unpack data send to the hub
 #include <rom/rtc.h>          //This is for rtc_get_reset_reason
 WebServer server(80);
+#include "OTA.h"
 #include "functions.h"
 #include "miLight.h"
 #include "Button.h"
@@ -105,7 +106,7 @@ void setup() {
 #endif //SecondSwitch
     ButtonPressedID = ButtonID;   //Get the button state, here 1 is HIGH in the form of '0000<Button 1><2><3><4> '
     if (byte(ButtonPressedID | B00001111) == 255 or byte(ButtonPressedID | B11110000) == 255) { //If a set of 4 buttons are all pressed
-      OTA_setup();                        //Enable OTA
+      OTA.Enabled = true;                        //Set OTA on
       WiFiManager.EnableSetup(true);                //Enable the settings page
     }
   }
@@ -124,6 +125,8 @@ void setup() {
 #endif //IFTTT
   server.on("/",          WiFiManager_handle_Connect);    //Must be declaired before "WiFiManager.Start()" for APMode
   server.on("/setup",     WiFiManager_handle_Settings);   //Must be declaired before "WiFiManager.Start()" for APMode
+  server.on("/ota",               OTA_handle_uploadPage);
+  server.on("/update", HTTP_POST, OTA_handle_update, OTA_handle_update2);
   server.onNotFound(      HandleNotFound);
   //===========================================================================
   //Start WIFI
@@ -155,8 +158,7 @@ void setup() {
 void loop() {
   server.handleClient();
 
-  if (OTA_loop())                       //handle OTA if needed
-    BlinkEveryMs(LED_BUILTIN, 1000);    //Blink every x MS to show OTA is on
+  if (OTA.Enabled) BlinkEveryMs(LED_BUILTIN, 1000);    //Blink every x MS to show OTA is on
 
   for (byte i = 0; i < Amount_Buttons; i++) {
     Check(SwitchA[i].CheckButton(), LightA, CommandsA[i], SwitchA[i].Data.PIN_LED, i);
@@ -193,7 +195,7 @@ void Check(Button_Time Value, MiLight Light, String Action, byte LEDpin, byte Bu
     if (LEDpin > 0) digitalWrite(LEDpin, LOW);          //If a LED pin was given; Set that buttons LED off
   } else if (Value.StartLongPress) {
     if (ButtonID == 0)
-      OTA_setup();
+      OTA.Enabled = !OTA.Enabled;                       //Toggle OTA on/off
     else if (ButtonID == 1)
     if (LEDpin > 0) digitalWrite(LEDpin, LOW);       //If a LED pin was given; Set that buttons LED off
       WiFiManager.EnableSetup(true);
