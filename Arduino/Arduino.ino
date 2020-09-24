@@ -106,7 +106,7 @@ void setup() {
     ButtonPressedID = ButtonID;   //Get the button state, here 1 is HIGH in the form of '0000<Button 1><2><3><4> '
     if (byte(ButtonPressedID | B00001111) == 255 or byte(ButtonPressedID | B11110000) == 255) { //If a set of 4 buttons are all pressed
       OTA_setup();                        //Enable OTA
-      WiFiManager_EnableSetup(true);      //Enable the settings page
+      WiFiManager.EnableSetup(true);                //Enable the settings page
     }
   }
   for (byte i = 0; i < Amount_Buttons; i++) {
@@ -118,25 +118,25 @@ void setup() {
   //===========================================================================
   //Initialise server stuff
   //===========================================================================
-  server.on("/",          WiFiManager_handle_Connect);    //Must be declaired before "WiFiManager_Start()" for APMode
-  server.on("/setup",     WiFiManager_handle_Settings);   //Must be declaired before "WiFiManager_Start()" for APMode
 #ifdef IFTTT
   server.on("/set",       IFTTT_handle_Set);
   server.on("/register",  IFTTT_handle_Register);
 #endif //IFTTT
+  server.on("/",          WiFiManager_handle_Connect);    //Must be declaired before "WiFiManager.Start()" for APMode
+  server.on("/setup",     WiFiManager_handle_Settings);   //Must be declaired before "WiFiManager.Start()" for APMode
   server.onNotFound(      HandleNotFound);
   //===========================================================================
   //Start WIFI
   //===========================================================================
-  byte Answer = WiFiManager_Start();
+  byte Answer = WiFiManager.Start();
   if (Answer != 1) {
 #ifdef SerialEnabled
     Serial.println("setup error code '" + String(Answer) + "'");
 #endif //SerialEnabled
     ESP.restart();                //Restart the ESP
   }
-  WiFiManager_StartServer();      //Start the server (so IFTTT and settings etc can be handled)
-  //WiFiManager_EnableSetup(true);
+  WiFiManager.StartServer();      //Start the server
+  //WiFiManager.EnableSetup(true);
 #ifdef SerialEnabled
   //===========================================================================
   //Get Reset reason (This could be/is usefull for power outage)
@@ -195,8 +195,8 @@ void Check(Button_Time Value, MiLight Light, String Action, byte LEDpin, byte Bu
     if (ButtonID == 0)
       OTA_setup();
     else if (ButtonID == 1)
-      WiFiManager_EnableSetup(true);
     if (LEDpin > 0) digitalWrite(LEDpin, LOW);       //If a LED pin was given; Set that buttons LED off
+      WiFiManager.EnableSetup(true);
   }
   if (Value.PressedLong) {                              //If it is/was a long press
     if (Value.Pressed) {                                //If we are still pressing
