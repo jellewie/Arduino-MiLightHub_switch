@@ -15,10 +15,11 @@ char MiLight_IP[16] = "192.168.255.255";
 byte SetLight(MiLight Light, String Content) {
   /*Return Value:
     1= Done (responce code 200)
-    2= #ERROR Cant connect to HUB
+    2= #ERROR Can not connect to HUB
     3= responce code 400 (Execution error)
     4= unknown error
     5= Timeout recieving responce code
+    6= 2+No WIFI connected
   */
   String path = "/gateways/" + Light.device_id + "/" + Light.remote_type + "/" + String(Light.group_id);
   WiFiClient client;
@@ -28,6 +29,7 @@ byte SetLight(MiLight Light, String Content) {
     Serial.println("ML: #ERROR Cant connect to HUB '" + String(MiLight_IP) + "" + "'");
 #endif //SerialEnabled
     Blink_Amount(LED_BUILTIN, 200, 10);             //Can't connect to hub: Just blink a bit to show this error
+    if (String(WiFi.localIP()) = "0.0.0.0") return 6;
     return 2;                                       //Stop here, no reason to move on
   }
 #ifdef SerialEnabled

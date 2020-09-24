@@ -1,6 +1,7 @@
 /*
   Program written by JelleWho
   Board: https://dl.espressif.com/dl/package_esp32_index.json
+  Sketch from: https://github.com/jellewie/Arduino-MiLightHub_switch
 
   FIXME?
   On boot button stuck, when released, the buttonpressed interupt has happened, and pressed/longpressed will be executed
@@ -8,6 +9,10 @@
   Make a manual, and descibe things like 'button 1 (ID0) is Enable_OTA' and 'button 2 (ID1) is enable settings page'
 
 */
+#if !defined(ESP32)
+#error "Please check if the 'DOIT ESP32 DEVKIT V1' board is selected, which can be downloaded at https://dl.espressif.com/dl/package_esp32_index.json"
+#endif
+
 #include <WiFi.h>             //Needed for WiFi stuff
 #include <WiFiClient.h>       //Needed for sending data to devices
 #include <WebServer.h>        //This is to create a acces point with wifimanager if no wifi is set
@@ -38,7 +43,7 @@ String CommandsA[Amount_Buttons] = {"{\"commands\":[\"toggle\"]}",
 
 #ifdef SecondSwitch
 MiLight LightB = {"0xF002", "rgb_cct", 1};                         //What light to control
-Button SwitchB[4] = {buttons({26, 23}), buttons({27, 22}), buttons({14,  4}), buttons({12,15})};   //Orginal layout
+Button SwitchB[4] = {buttons({26, 23}), buttons({27, 22}), buttons({14,  4}), buttons({12, 15})};  //Orginal layout
 //Button SwitchB[4] = {buttons({27, 22}), buttons({12, 15}), buttons({26, 23}), buttons({14,  4})};   //case 90  clockwise to PCB
 //Button SwitchB[4] = {buttons({12, 15}), buttons({14,  4}), buttons({27, 22}), buttons({26, 23})};   //case 180 clockwise to PCB
 //Button SwitchB[4] = {buttons({14,  4}), buttons({26, 23}), buttons({12, 15}), buttons({27, 22})};   //case 270 clockwise to PCB
@@ -51,6 +56,7 @@ String CommandsB[Amount_Buttons] = {"{\"commands\":[\"toggle\"]}",
 //////////////////////////////////////////////////////////////////////
 //  End of user Settings
 //////////////////////////////////////////////////////////////////////
+#include "WifiManager.h"
 void setup() {
 #ifdef SerialEnabled
   Serial.begin(115200);
@@ -79,7 +85,7 @@ void setup() {
     Serial.println("Waiting on a button(s) " + String(ButtonPressedID, HEX) + " before starting up");
 #endif //SerialEnabled
     ButtonPressedID = 0;                          //Set to NOT pressed by default, will be overwritten
-    while (!TickEveryMS(50)) {}           //Wait here for 50ms (so an error blink would be nice)
+    while (!TickEveryMS(50)) {}                   //Wait here for 50ms (so an error blink would be nice)
 
     //Returns the button states in bits; Like 0000<button1><b2><b3><b4> where 1 is HIGH and 0 is LOW
     //Example '00001001' = Buttons 1 and 4 are HIGH (Note we count from LSB)
@@ -104,25 +110,21 @@ void setup() {
         digitalWrite(SwitchB[i].Data.PIN_LED, LOW);
     }
 #endif //SecondSwitch
-    ButtonPressedID = ButtonID;   //Get the button state, here 1 is HIGH in the form of '0000<Button 1><2><3><4> '
+    ButtonPressedID = ButtonID;                     //Get the button state, here 1 is HIGH in the form of '0000<Button 1><2><3><4> '
     if (byte(ButtonPressedID | B00001111) == 255 or byte(ButtonPressedID | B11110000) == 255) { //If a set of 4 buttons are all pressed
       OTA.Enabled = true;                        //Set OTA on
       WiFiManager.EnableSetup(true);                //Enable the settings page
     }
   }
   for (byte i = 0; i < Amount_Buttons; i++) {
-    digitalWrite(SwitchA[i].Data.PIN_LED, LOW);                 //Make sure all LED's are off
+    digitalWrite(SwitchA[i].Data.PIN_LED, LOW);     //Make sure all LED's are off
 #ifdef SecondSwitch
-    digitalWrite(SwitchB[i].Data.PIN_LED, LOW);                 //Make sure all LED's are off
+    digitalWrite(SwitchB[i].Data.PIN_LED, LOW);     //Make sure all LED's are off
 #endif //SecondSwitch
   }
   //===========================================================================
   //Initialise server stuff
   //===========================================================================
-#ifdef IFTTT
-  server.on("/set",       IFTTT_handle_Set);
-  server.on("/register",  IFTTT_handle_Register);
-#endif //IFTTT
   server.on("/",          WiFiManager_handle_Connect);    //Must be declaired before "WiFiManager.Start()" for APMode
   server.on("/setup",     WiFiManager_handle_Settings);   //Must be declaired before "WiFiManager.Start()" for APMode
   server.on("/ota",               OTA_handle_uploadPage);
@@ -148,10 +150,6 @@ void setup() {
     Serial.println("Done with boot, resetted due to");
     print_reset_reason(a);
   }
-  /*0xc SW_CPU_RESET  "Core  1 panic'ed (Interrupt wdt timeout on CPU1)"
-                    Software reset
-    0x1 POWERON_RESET Power on
-                    power reset     */
 #endif //SerialEnabled
 }
 //===========================================================================
@@ -178,18 +176,23 @@ void Check(Button_Time Value, MiLight Light, String Action, byte LEDpin, byte Bu
     byte TriesConnect = 2;
     for (int i = 5; i > 0; i--) {                       //Where i is amount of tries tries to do
       byte Feedback = SetLight(Light, Action);
-      if (Feedback == 1) {                              //If done
-        i = 0;                                          //Do not execute/try again
-      } else if (Feedback == 2) {                       //Can't connect
-        TriesConnect--;
-        if (TriesConnect == 0)
-          i = 0;                                        //Do not execute/try again
-      } else {
-        if (Feedback == 3)                              //If Json wrong format
-          i = 0;                                        //Do not execute/try again
+      switch (Feedback) {
+        case 1:                                         //If done
+          i = 0;                                        //  Do not try again (
+          break;
+        case 2:                                         //Can't connect, hub is offline
+          i = 0;                                        //  Do not try again (
+          break;
+        case 3:                                         //If Json wrong format
 #ifdef SerialEnabled
-        Serial.println("Error sending, code=" + String(Feedback));
+          Serial.println("Error in Json");
 #endif //SerialEnabled
+          i = 0;                                        //  Do not try again (
+          break;
+        case 6:                                         //If we are not connected to WIFI
+          WiFiManager_Connected = false;
+          i = 0;                                        //  Do not try again (
+          break;
       }
     }
     if (LEDpin > 0) digitalWrite(LEDpin, LOW);          //If a LED pin was given; Set that buttons LED off
@@ -197,8 +200,8 @@ void Check(Button_Time Value, MiLight Light, String Action, byte LEDpin, byte Bu
     if (ButtonID == 0)
       OTA.Enabled = !OTA.Enabled;                       //Toggle OTA on/off
     else if (ButtonID == 1)
-    if (LEDpin > 0) digitalWrite(LEDpin, LOW);       //If a LED pin was given; Set that buttons LED off
       WiFiManager.EnableSetup(true);
+    if (LEDpin > 0) digitalWrite(LEDpin, LOW);          //If a LED pin was given; Set that buttons LED off
   }
   if (Value.PressedLong) {                              //If it is/was a long press
     if (Value.Pressed) {                                //If we are still pressing
