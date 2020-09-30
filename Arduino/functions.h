@@ -58,6 +58,5 @@ byte GetResetReason() {
   byte ResetReason = rtc_get_reset_reason(0);
   if (ResetReason == 0)
     ResetReason = rtc_get_reset_reason(1);
-  if (ResetReason > 0) print_reset_reason(ResetReason);
   return ResetReason;
 }
