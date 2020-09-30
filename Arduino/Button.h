@@ -34,7 +34,7 @@ class Button {
       pinMode(Data.PIN_Button, INPUT);            //Set the button pin as INPUT
       if (Data.PIN_LED != 0)                      //If a LED pin is given
         pinMode(Data.PIN_LED, OUTPUT);            //Set the LED pin as output
-      State.PressEnded = true;
+      Pinchange();                                //Init the pin, this will make sure it starts in the right HIGH or LOW state
     }
     Button_Time CheckButton() {
       if (!State.PressEnded)
