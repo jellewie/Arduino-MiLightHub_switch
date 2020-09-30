@@ -18,7 +18,7 @@
 #ifndef WifiManager_h                               //This prevents including this file more than once
 #define WifiManager_h
 
-#define WiFiManager_SerialEnabled                 //Disable to not send Serial debug feedback
+//#define WiFiManager_SerialEnabled                 //Disable to not send Serial debug feedback
 //#define dnsServerEnabled
 #ifdef dnsServerEnabled
 #include <DNSServer.h>
@@ -27,11 +27,11 @@ DNSServer dnsServer;
 
 #include <EEPROM.h>
 
-#ifdef SecondSwitch
-const String WiFiManager_VariableNames[] {"SSID", "Password", "MiLight_IP", "Button A1", "Button A2", "Button A3", "Button A4", "LightA ID", "LightA type", "LightA group", "Button B1", "Button B2", "Button B3", "Button B4", "LightB ID", "LightB type", "LightB group"};
-#else
-const String WiFiManager_VariableNames[] {"SSID", "Password", "MiLight_IP", "Button A1", "Button A2", "Button A3", "Button A4", "LightA ID", "LightA type", "LightA group"};
-#endif //SecondSwitch
+const String WiFiManager_VariableNames[] {"SSID", "Password", "MiLight_IP",
+  "Button A1", "Button A2", "Button A3", "Button A4", "LightA ID", "LightA type", "LightA group", "Rotation A",
+  "Button B1", "Button B2", "Button B3", "Button B4", "LightB ID", "LightB type", "LightB group", "Rotation B"
+};
+
 const byte WiFiManager_Settings = sizeof(WiFiManager_VariableNames) / sizeof(WiFiManager_VariableNames[0]); //Why filling this in if we can automate that? :)
 bool WiFiManager_Connected;                         //If the ESP is WiFiManager_Connected to WIFI
 
@@ -93,29 +93,33 @@ class CWiFiManager {
         case 10:
           LightA.group_id = Value.toInt();
           break;
-#ifdef SecondSwitch
         case 11:
-          CommandsB[0] = Value;
+          RotationA = Value.toInt();
           break;
         case 12:
-          CommandsB[1] = Value;
+          CommandsB[0] = Value;
           break;
         case 13:
-          CommandsB[2] = Value;
+          CommandsB[1] = Value;
           break;
         case 14:
-          CommandsB[3] = Value;
+          CommandsB[2] = Value;
           break;
         case 15:
-          LightB.device_id = Value;
+          CommandsB[3] = Value;
           break;
         case 16:
-          LightB.remote_type = Value;
+          LightB.device_id = Value;
           break;
         case 17:
+          LightB.remote_type = Value;
+          break;
+        case 18:
           LightB.group_id = Value.toInt();
           break;
-#endif //SecondSwitch
+        case 19:
+          RotationB = Value.toInt();
+          break;
       }
       return true;
     }
@@ -162,29 +166,33 @@ class CWiFiManager {
         case 10:
           Return_Value = LightA.group_id;
           break;
-#ifdef SecondSwitch
         case 11:
-          Return_Value = CommandsB[0];
+          Return_Value = String(RotationA);
           break;
         case 12:
-          Return_Value = CommandsB[1];
+          Return_Value = CommandsB[0];
           break;
         case 13:
-          Return_Value = CommandsB[2];
+          Return_Value = CommandsB[1];
           break;
         case 14:
-          Return_Value = CommandsB[3];
+          Return_Value = CommandsB[2];
           break;
         case 15:
-          Return_Value = LightB.device_id;
+          Return_Value = CommandsB[3];
           break;
         case 16:
-          Return_Value = LightB.remote_type;
+          Return_Value = LightB.device_id;
           break;
         case 17:
+          Return_Value = LightB.remote_type;
+          break;
+        case 18:
           Return_Value = LightB.group_id;
           break;
-#endif //SecondSwitch
+        case 19:
+          Return_Value = String(RotationB);
+          break;
       }
 #ifdef WiFiManager_SerialEnabled
       Serial.println(" = " + Return_Value);
