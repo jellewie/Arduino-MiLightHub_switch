@@ -7,7 +7,7 @@
   On boot button stuck, when released, the buttonpressed interupt has happened, and pressed/longpressed will be executed
   Make a manual, and descibe things like 'button 1 (ID0) is Enable_OTA and settings page'
   Maybe Reset button in the webb app?
-  
+
   NOTE: adding a second pair RotationB requires a reboot
 */
 #if !defined(ESP32)
@@ -130,6 +130,7 @@ void setup() {
   server.on("/setup",             WiFiManager_handle_Settings);   //Must be declaired before "WiFiManager.Start()" for APMode
   server.on("/ota",               OTA_handle_uploadPage);
   server.on("/update", HTTP_POST, OTA_handle_update, OTA_handle_update2);
+  server.on("/restart",           handle_Restart);
   server.onNotFound(              HandleNotFound);
   //===========================================================================
   //Start WIFI
@@ -142,17 +143,6 @@ void setup() {
     ESP.restart();                //Restart the ESP
   }
   WiFiManager.StartServer();      //Start the server
-  //==============================
-  //Set up mDNS responder     //https://github.com/espressif/arduino-esp32/blob/master/libraries/ESPmDNS/src/ESPmDNS.cpp
-  //==============================
-  bool MDNSStatus = MDNS.begin(Name);                 //Start mDNS with the given domain name
-  if (MDNSStatus) MDNS.addService("http", "tcp", 80); //Add service to MDNS-SD
-#ifdef SerialEnabled
-  if (MDNSStatus)
-    Serial.println("SE: mDNS responder started");
-  else
-    Serial.println("SE: Error setting up MDNS responder!");
-#endif
   //===========================================================================
   //Get Reset reason (This could be/is usefull for power outage)
   //===========================================================================
@@ -165,6 +155,20 @@ void setup() {
 //===========================================================================
 void loop() {
   if (OTA.Enabled) {
+    //==============================
+    //Set up mDNS responder     //https://github.com/espressif/arduino-esp32/blob/master/libraries/ESPmDNS/src/ESPmDNS.cpp
+    //==============================
+    static bool MDNSInit = true;                      //If mDNS needs to be init-ed
+    if (MDNSInit) {
+      MDNSInit = false;
+      bool MDNSStatus = MDNS.begin(Name);             //Start mDNS with the given domain name
+      if (MDNSStatus) MDNS.addService("http", "tcp", 80); //Add service to MDNS-SD
+#ifdef SerialEnabled
+      if (MDNSStatus) Serial.println("SE: mDNS responder started");
+      else Serial.println("SE: Error setting up MDNS responder!");
+#endif
+    }
+    //==============================
     BlinkEveryMs(LED_BUILTIN, 1000);                  //Blink every x MS to show OTA is on
     server.handleClient();
   }
@@ -270,6 +274,10 @@ byte RotateButtonID(byte Rotation, byte i) {
   return 0;
 }
 //===========================================================================
+
+void handle_Restart() {
+  ESP.restart();
+}
 void ISR_A0() {
   SwitchA[0].Pinchange();
 }

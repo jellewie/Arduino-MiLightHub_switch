@@ -27,7 +27,7 @@ DNSServer dnsServer;
 
 #include <EEPROM.h>
 
-const String WiFiManager_VariableNames[] {"SSID", "Password", "MiLight_IP",
+const String WiFiManager_VariableNames[] {"SSID", "Password", "Name", "MiLight_IP",
   "Button A1", "Button A2", "Button A3", "Button A4", "LightA ID", "LightA type", "LightA group", "Rotation A",
   "Button B1", "Button B2", "Button B3", "Button B4", "LightB ID", "LightB type", "LightB group", "Rotation B"
 };
@@ -70,59 +70,64 @@ class CWiFiManager {
           return false;                             //Not set, the password was just '*****'
           break;
         case 3:
-          if (Value.length() > sizeof(MiLight_IP))
-            return false;                           //Length of IP is to long, it would not fit
+          if (Value.length() > sizeof(Name))
+            return false;                           //Length is to long, it would not fit
           Value.toCharArray(MiLight_IP, 16);
           break;
         case 4:
-          CommandsA[0] = Value;
+          if (Value.length() > sizeof(MiLight_IP))
+            return false;                           //Length is to long, it would not fit
+          Value.toCharArray(MiLight_IP, 16);
           break;
         case 5:
-          CommandsA[1] = Value;
+          CommandsA[0] = Value;
           break;
         case 6:
-          CommandsA[2] = Value;
+          CommandsA[1] = Value;
           break;
         case 7:
-          CommandsA[3] = Value;
+          CommandsA[2] = Value;
           break;
         case 8:
-          LightA.device_id = Value;
+          CommandsA[3] = Value;
           break;
         case 9:
-          LightA.remote_type = Value;
+          LightA.device_id = Value;
           break;
         case 10:
+          LightA.remote_type = Value;
+          break;
+        case 11:
           LightA.group_id = Value.toInt();
           break;
-        case 11: {
+        case 12: {
             byte Rotation = ConvertRotationToByte(Value);
             if (Rotation == UNK) return false;      //Not set, Rotation is out of range
             if (Rotation == UNUSED) return false;   //Switch 1 can not be disabled
             RotationA = Rotation;
           } break;
-        case 12:
+        case 13:
           CommandsB[0] = Value;
           break;
-        case 13:
+        case 14:
           CommandsB[1] = Value;
           break;
-        case 14:
+        case 15:
           CommandsB[2] = Value;
           break;
-        case 15:
+        case 16:
           CommandsB[3] = Value;
           break;
-        case 16:
+        case 17:
           LightB.device_id = Value;
           break;
-        case 17:
+        case 18:
           LightB.remote_type = Value;
           break;
-        case 18:
+        case 19:
           LightB.group_id = Value.toInt();
           break;
-        case 19: {
+        case 20: {
             byte Rotation = ConvertRotationToByte(Value);
             if (Rotation == UNK) return false;      //Not set, Rotation is out of range
             RotationB = Rotation;
@@ -150,54 +155,57 @@ class CWiFiManager {
           }
           break;
         case 3:
-          Return_Value = String(MiLight_IP);
+          Return_Value =  String(Name);
           break;
         case 4:
-          Return_Value = CommandsA[0];
+          Return_Value = String(MiLight_IP);
           break;
         case 5:
-          Return_Value = CommandsA[1];
+          Return_Value = CommandsA[0];
           break;
         case 6:
-          Return_Value = CommandsA[2];
+          Return_Value = CommandsA[1];
           break;
         case 7:
-          Return_Value = CommandsA[3];
+          Return_Value = CommandsA[2];
           break;
         case 8:
-          Return_Value = LightA.device_id;
+          Return_Value = CommandsA[3];
           break;
         case 9:
-          Return_Value = LightA.remote_type;
+          Return_Value = LightA.device_id;
           break;
         case 10:
-          Return_Value = LightA.group_id;
+          Return_Value = LightA.remote_type;
           break;
         case 11:
-          Return_Value = ConvertRotationToString(RotationA);
+          Return_Value = LightA.group_id;
           break;
         case 12:
-          Return_Value = CommandsB[0];
+          Return_Value = ConvertRotationToString(RotationA);
           break;
         case 13:
-          Return_Value = CommandsB[1];
+          Return_Value = CommandsB[0];
           break;
         case 14:
-          Return_Value = CommandsB[2];
+          Return_Value = CommandsB[1];
           break;
         case 15:
-          Return_Value = CommandsB[3];
+          Return_Value = CommandsB[2];
           break;
         case 16:
-          Return_Value = LightB.device_id;
+          Return_Value = CommandsB[3];
           break;
         case 17:
-          Return_Value = LightB.remote_type;
+          Return_Value = LightB.device_id;
           break;
         case 18:
-          Return_Value = LightB.group_id;
+          Return_Value = LightB.remote_type;
           break;
         case 19:
+          Return_Value = LightB.group_id;
+          break;
+        case 20:
           Return_Value = ConvertRotationToString(RotationB);
           break;
       }
