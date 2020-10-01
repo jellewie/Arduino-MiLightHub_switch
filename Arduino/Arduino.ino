@@ -70,6 +70,10 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
   //===========================================================================
+  //Load data, since we need this for the rotation
+  //===========================================================================
+  WiFiManager.LoadData();
+  //===========================================================================
   //Attach interupts to the button pins so we can responce if they change
   //===========================================================================
   attachInterrupt(SwitchA[0].Data.PIN_Button, ISR_A0, CHANGE);
