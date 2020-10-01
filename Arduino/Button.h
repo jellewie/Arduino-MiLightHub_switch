@@ -11,7 +11,7 @@ struct buttons {
 struct Button_Time {
   bool StartPress;      //Triggered once on start press
   bool StartLongPress;  //Triggered once if timePressed > LongPress
-  bool StartDoublePress;//Triggered once on start press if the last button was les then DoublePress time ago
+  bool StartDoublePress;//Triggered once on start press if the last button was less then DoublePress time ago
   bool StartRelease;    //Triggered once on stop press
   bool Pressed;         //If button is pressed
   bool PressedLong;     //If timePressed > LongPress
