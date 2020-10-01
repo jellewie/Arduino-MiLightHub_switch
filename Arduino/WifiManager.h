@@ -48,7 +48,7 @@ class CWiFiManager {
     char password[16] = "";                         //Also efines howmany characters can be in the SSID
     char ssid[16] = "";                             //^
     //#define strip_ip, gateway_ip, subnet_mask to use static IP
-    char APSSID[16] = "ESP32";
+    char* APSSID = Name;
     const int EEPROM_size = 512;                    //Max Amount of chars of 'SSID + PASSWORD' (+1) (+extra custom vars)
     const byte Pin_LED  = LED_BUILTIN;              //The LED to give feedback on (like blink on error)
     bool Set_Value(byte ValueID, String Value) {
@@ -70,6 +70,8 @@ class CWiFiManager {
           return false;                             //Not set, the password was just '*****'
           break;
         case 3:
+          if (Value.length() > sizeof(MiLight_IP))
+            return false;                           //Length of IP is to long, it would not fit
           Value.toCharArray(MiLight_IP, 16);
           break;
         case 4:
@@ -93,9 +95,12 @@ class CWiFiManager {
         case 10:
           LightA.group_id = Value.toInt();
           break;
-        case 11:
-          RotationA = Value.toInt();
-          break;
+        case 11: {
+            byte Rotation = ConvertRotationToByte(Value);
+            if (Rotation == UNK) return false;      //Not set, Rotation is out of range
+            if (Rotation == UNUSED) return false;   //Switch 1 can not be disabled
+            RotationA = Rotation;
+          } break;
         case 12:
           CommandsB[0] = Value;
           break;
@@ -117,9 +122,11 @@ class CWiFiManager {
         case 18:
           LightB.group_id = Value.toInt();
           break;
-        case 19:
-          RotationB = Value.toInt();
-          break;
+        case 19: {
+            byte Rotation = ConvertRotationToByte(Value);
+            if (Rotation == UNK) return false;      //Not set, Rotation is out of range
+            RotationB = Rotation;
+          } break;
       }
       return true;
     }
@@ -167,7 +174,7 @@ class CWiFiManager {
           Return_Value = LightA.group_id;
           break;
         case 11:
-          Return_Value = String(RotationA);
+          Return_Value = ConvertRotationToString(RotationA);
           break;
         case 12:
           Return_Value = CommandsB[0];
@@ -191,7 +198,7 @@ class CWiFiManager {
           Return_Value = LightB.group_id;
           break;
         case 19:
-          Return_Value = String(RotationB);
+          Return_Value = ConvertRotationToString(RotationB);
           break;
       }
 #ifdef WiFiManager_SerialEnabled
@@ -419,7 +426,7 @@ class CWiFiManager {
     }
     void handle_Connect() {
       if (!SettingsEnabled) return;                 //If settingscommand is disabled: Stop right away, and do noting
-      String HTML = "<strong>" + String(APSSID) + " settings</strong><br><br><form action=\"/setup?\" method=\"get\">";
+      String HTML = "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover\"><strong>" + String(APSSID) + " settings</strong><br><br><form action=\"/setup?\" method=\"get\">";
       for (byte i = 1; i < WiFiManager_Settings + 1; i++)
         HTML += "<div><label>" + WiFiManager_VariableNames[i - 1] + " </label><input type=\"text\" name=\"" + i + "\" value=\"" + Get_Value(i, false, true) + "\"></div>";
       HTML += "<button>Send</button></form>"
@@ -466,7 +473,18 @@ class CWiFiManager {
     }
     void CheckAndReconnectIfNeeded() {
       //Checks if WIFI is connected, and if so tries to reconnect
-      if (String(WiFi.localIP()) = "0.0.0.0") Start();
+      IPAddress MyIp = WiFi.localIP();
+      if (MyIp[0] == 0 and MyIp[1] == 0 and MyIp[2] == 0 and MyIp[3] == 0) {
+#ifdef WiFiManager_SerialEnabled
+        Serial.println("WM: Ip lost, reconnecting, ip=" + String(MyIp[0]) + "." + String(MyIp[1]) + "." + String(MyIp[2]) + "." + String(MyIp[3]));
+#endif //WiFiManager_SerialEnabled
+        Start();
+      } else {
+#ifdef WiFiManager_SerialEnabled
+        Serial.println("WM: Still connected :) , ip=" + String(MyIp[0]) + "." + String(MyIp[1]) + "." + String(MyIp[2]) + "." + String(MyIp[3]));
+#endif //WiFiManager_SerialEnabled
+      }
+
     }
 #ifdef WiFiManager_SerialEnabled
     String ConvertWifistatus(byte IN) {

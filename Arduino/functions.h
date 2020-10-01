@@ -1,3 +1,43 @@
+enum {UNUSED, NORMAL, LEFT, UPSIDE_DOWN, RIGHT, UNK};
+String RotationNames[] = {"UNUSED", "NORMAL", "LEFT", "UPSIDE_DOWN", "RIGHT", "UNK"};
+const byte Rotation_Amount = sizeof(RotationNames) / sizeof(RotationNames[0]); //Why filling this in if we can automate that? :)
+
+bool StringisDigit(String IN) {
+  for (byte i = 0; i < IN.length(); i++) {
+    if (not isDigit(IN.charAt(i)))
+      return false;
+  }
+  return true;
+}
+byte ConvertRotationToByte(String IN) {
+#ifdef Convert_SerialEnabled
+  Serial.println("CV: ConvertRotationToByte '" + String(IN) + "'");
+#endif //Convert_SerialEnabled
+  if (StringisDigit(IN)) {
+    if (IN.toInt() < Rotation_Amount)
+      return IN.toInt();
+    else
+      return UNK;
+  }
+  IN.trim();
+  IN.toUpperCase();
+  for (byte i = 0; i < Rotation_Amount; i++) {
+    if (IN == RotationNames[i])
+      return i;
+  }
+  return UNK;
+}
+String ConvertRotationToString(byte IN) {
+#ifdef Convert_SerialEnabled
+  Serial.println("CV: ConvertRotationToString '" + String(IN) + "'");
+#endif //Convert_SerialEnabled
+  if (IN < Rotation_Amount)
+    return RotationNames[IN];
+  return "UNK";
+}
+
+
+
 void HandleNotFound() {
 #ifdef SerialEnabled
   Serial.println("Method: " + String(server.method()) + " URI: " + server.uri());
@@ -33,26 +73,28 @@ String macToStr(const byte* _mac) {
   }
   return _result;
 }
-void print_reset_reason(byte reason) {
+#ifdef SerialEnabled
+String ResetReasonToString(byte Reason) {
   //https://github.com/espressif/esp-idf/blob/release/v3.0/components/esp32/include/rom/rtc.h#L80
-  switch (reason) {
-    case 0  : Serial.println("NO_MEAN"); break;
-    case 1  : Serial.println("POWERON_RESET"); break;           /**<1,  Vbat power on reset                         Rebooted by; power |or| Reset button |or| Software upload USB*/
-    case 3  : Serial.println("SW_RESET"); break;                /**<3,  Software reset digital core                 rebooted by; software command "ESP.restart();"*/
-    case 4  : Serial.println("OWDT_RESET"); break;              /**<4,  Legacy watch dog reset digital core         */
-    case 5  : Serial.println("DEEPSLEEP_RESET"); break;         /**<5,  Deep Sleep reset digital core               */
-    case 6  : Serial.println("SDIO_RESET"); break;              /**<6,  Reset by SLC module, reset digital core     */
-    case 7  : Serial.println("TG0WDT_SYS_RESET"); break;        /**<7,  Timer Group0 Watch dog reset digital core   */
-    case 8  : Serial.println("TG1WDT_SYS_RESET"); break;        /**<8,  Timer Group1 Watch dog reset digital core   */
-    case 9  : Serial.println("RTCWDT_SYS_RESET"); break;        /**<9,  RTC Watch dog Reset digital core            */
-    case 10 : Serial.println("INTRUSION_RESET"); break;         /**<10, Instrusion tested to reset CPU*/
-    case 11 : Serial.println("TGWDT_CPU_RESET"); break;         /**<11, Time Group reset CPU*/
-    case 12 : Serial.println("SW_CPU_RESET"); break;            /**<12, Software reset CPU*/
-    case 13 : Serial.println("RTCWDT_CPU_RESET"); break;        /**<13, RTC Watch dog Reset CPU*/
-    case 14 : Serial.println("EXT_CPU_RESET"); break;           /**<14, for APP CPU, reseted by PRO CPU*/
-    case 15 : Serial.println("RTCWDT_BROWN_OUT_RESET"); break;  /**<15, Reset when the vdd voltage is not stable*/
-    case 16 : Serial.println("RTCWDT_RTC_RESET"); break;        /**<16, RTC Watch dog reset digital core and rtc module*/
+  switch (Reason) {
+    case 0  : return "NO_MEAN"; break;
+    case 1  : return "POWERON_RESET"; break;           /**<1,  Vbat power on reset                         Rebooted by; power |or| Reset button |or| Software upload USB*/
+    case 3  : return "SW_RESET"; break;                /**<3,  Software reset digital core                 rebooted by; software command "ESP.restart();"*/
+    case 4  : return "OWDT_RESET"; break;              /**<4,  Legacy watch dog reset digital core         */
+    case 5  : return "DEEPSLEEP_RESET"; break;         /**<5,  Deep Sleep reset digital core               */
+    case 6  : return "SDIO_RESET"; break;              /**<6,  Reset by SLC module, reset digital core     */
+    case 7  : return "TG0WDT_SYS_RESET"; break;        /**<7,  Timer Group0 Watch dog reset digital core   */
+    case 8  : return "TG1WDT_SYS_RESET"; break;        /**<8,  Timer Group1 Watch dog reset digital core   */
+    case 9  : return "RTCWDT_SYS_RESET"; break;        /**<9,  RTC Watch dog Reset digital core            */
+    case 10 : return "INTRUSION_RESET"; break;         /**<10, Instrusion tested to reset CPU*/
+    case 11 : return "TGWDT_CPU_RESET"; break;         /**<11, Time Group reset CPU*/
+    case 12 : return "SW_CPU_RESET"; break;            /**<12, Software reset CPU*/
+    case 13 : return "RTCWDT_CPU_RESET"; break;        /**<13, RTC Watch dog Reset CPU*/
+    case 14 : return "EXT_CPU_RESET"; break;           /**<14, for APP CPU, reseted by PRO CPU*/
+    case 15 : return "RTCWDT_BROWN_OUT_RESET"; break;  /**<15, Reset when the vdd voltage is not stable*/
+    case 16 : return "RTCWDT_RTC_RESET"; break;        /**<16, RTC Watch dog reset digital core and rtc module*/
   }
+  return "UNK";
 }
 byte GetResetReason() {
   byte ResetReason = rtc_get_reset_reason(0);
@@ -60,3 +102,4 @@ byte GetResetReason() {
     ResetReason = rtc_get_reset_reason(1);
   return ResetReason;
 }
+#endif //SerialEnabled

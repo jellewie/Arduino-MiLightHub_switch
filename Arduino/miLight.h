@@ -10,8 +10,9 @@ struct State_rgb_cct {
   int color_temp;
   byte R, G, B;
 };
-char MiLight_IP[16] = "192.168.255.255";
+char MiLight_IP[16] = "192.168.255.255";    //http://milight-hub.local/
 
+enum {mi_UNDEF, mi_DONE, mi_HUB_OFFLINE, mi_EXECUTION_ERROR, mi_UNK, mi_TIMEOUT};
 byte SetLight(MiLight Light, String Content) {
   /*Return Value:
     1= Done (responce code 200)
@@ -19,26 +20,22 @@ byte SetLight(MiLight Light, String Content) {
     3= responce code 400 (Execution error)
     4= unknown error
     5= Timeout recieving responce code
-    6= 2+No WIFI connected
   */
   WiFiManager_CheckAndReconnectIfNeeded();
   String path = "/gateways/" + Light.device_id + "/" + Light.remote_type + "/" + String(Light.group_id);
   WiFiClient client;
   client.setTimeout(1000);
   if (!client.connect(MiLight_IP, 80)) {            //(Try) connect to hub
-#ifdef SerialEnabled
+#ifdef milight_SerialEnabled
     Serial.println("ML: #ERROR Cant connect to HUB '" + String(MiLight_IP) + "" + "'");
-#endif //SerialEnabled
+#endif //milight_SerialEnabled
     Blink_Amount(LED_BUILTIN, 200, 10);             //Can't connect to hub: Just blink a bit to show this error
-    if (String(WiFi.localIP()) = "0.0.0.0") return 6;
-    return 2;                                       //Stop here, no reason to move on
+    return mi_HUB_OFFLINE;                          //Stop here, no reason to move on
   }
-#ifdef SerialEnabled
+#ifdef milight_SerialEnabled
   Serial.println("ML: PUT " + path + " HTTP/1.1" + "_Host: " + String(MiLight_IP) + "_Data=" + Content);
-#endif //SerialEnabled
+#endif //milight_SerialEnabled
   client.println("PUT " + path + " HTTP/1.1");
-  //client.println("Host: " + String(MiLight_IP));
-  //client.println("Connection: close");
   client.println("Content-Length: " + String(Content.length()));
   client.println("Content-Type: application/json");
   client.println();                                         //Terminate headers with a blank line
@@ -61,63 +58,63 @@ byte SetLight(MiLight Light, String Content) {
     delay(1);               //Loop = 1+MS
     connectLoop--;          //Remove one from loop counter
     if (connectLoop <= 0)   //If loop counter = 0
-      return 5;             //Stop, we had a timeout
+      return mi_TIMEOUT;             //Stop, we had a timeout
   }
-#ifdef SerialEnabled
+#ifdef milight_SerialEnabled
   Serial.println("ML: Responcecode=" + String(Responcecode));
-#endif //SerialEnabled
+#endif //milight_SerialEnabled
   if (Responcecode == 200)
-    return 1;
+    return mi_DONE;
   if (Responcecode == 400)
-    return 3;
-  return 4;
+    return mi_EXECUTION_ERROR;
+  return mi_UNK;
 }
 //===========================================================================
-State_rgb_cct GetLight(MiLight Light) {
-  State_rgb_cct return_Value = {};
-  String path = "/gateways/" + Light.device_id + "/" + Light.remote_type + "/" + String(Light.group_id);
-
-  WiFiClient client;
-  client.setTimeout(1000);
-  Serial.println("boot");    //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
-  if (!client.connect(MiLight_IP, 80)) {            //(Try) connect to hub
-#ifdef SerialEnabled
-    Serial.println("ML: #ERROR Cant connect to HUB '" + String(MiLight_IP) + "" + "'");
-#endif //SerialEnabled
-    Blink_Amount(LED_BUILTIN, 200, 10);                            //Can't connect to hub: Just blink a bit to show this error
-    return return_Value;
-  } else {
-    Serial.println("GET data");    //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
-    client.println("GET " + path + " HTTP/1.1");
-    client.println("Connection: close");
-    client.println();
-    Serial.println("find");    //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
-    client.find("\r\n\r\n");
-    Serial.println("Allocate the JSON document");    //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
-    // Allocate the JSON document
-    // Use arduinojson.org/v6/assistant to compute the capacity.
-    // Example Json {"state": "OFF","brightness": 255,"color_temp": 350,"bulb_mode": "white","color":{"r": 255,"g": 255,"b": 255}}
-#define JsonCapacityRead JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(5) + 70
-    DynamicJsonDocument json(JsonCapacityRead);
-    Serial.println("Parse JSON object");    //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
-    // Parse JSON object
-    DeserializationError error = deserializeJson(json, client);
-    if (error) {
-      Serial.print("deserializeJson() failed: ");
-      Serial.println(error.c_str());
-      return return_Value;
-    }
-    Serial.println("Extract values");    //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
-    // Extract values
-    if (String(json["state"].as<char*>()) == "ON")
-      return_Value.state = true;
-    return_Value.brightness = json["brightness"].as<byte>();
-    return_Value.color_temp = json["color_temp"].as<int>();
-
-    return_Value.R = json["color"]["r"].as<byte>();
-    return_Value.G = json["color"]["g"].as<byte>();
-    return_Value.B = json["color"]["b"].as<byte>();
-    Serial.println("Done");    //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
-    return return_Value;
-  }
-}
+//State_rgb_cct GetLight(MiLight Light) {
+//  State_rgb_cct return_Value = {};
+//  String path = "/gateways/" + Light.device_id + "/" + Light.remote_type + "/" + String(Light.group_id);
+//
+//  WiFiClient client;
+//  client.setTimeout(1000);
+//  Serial.println("boot");    //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+//  if (!client.connect(MiLight_IP, 80)) {            //(Try) connect to hub
+//#ifdef milight_SerialEnabled
+//    Serial.println("ML: #ERROR Cant connect to HUB '" + String(MiLight_IP) + "" + "'");
+//#endif //milight_SerialEnabled
+//    Blink_Amount(LED_BUILTIN, 200, 10);                            //Can't connect to hub: Just blink a bit to show this error
+//    return return_Value;
+//  } else {
+//    Serial.println("GET data");    //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+//    client.println("GET " + path + " HTTP/1.1");
+//    client.println("Connection: close");
+//    client.println();
+//    Serial.println("find");    //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+//    client.find("\r\n\r\n");
+//    Serial.println("Allocate the JSON document");    //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+//    // Allocate the JSON document
+//    // Use arduinojson.org/v6/assistant to compute the capacity.
+//    // Example Json {"state": "OFF","brightness": 255,"color_temp": 350,"bulb_mode": "white","color":{"r": 255,"g": 255,"b": 255}}
+//#define JsonCapacityRead JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(5) + 70
+//    DynamicJsonDocument json(JsonCapacityRead);
+//    Serial.println("Parse JSON object");    //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+//    // Parse JSON object
+//    DeserializationError error = deserializeJson(json, client);
+//    if (error) {
+//      Serial.print("deserializeJson() failed: ");
+//      Serial.println(error.c_str());
+//      return return_Value;
+//    }
+//    Serial.println("Extract values");    //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+//    // Extract values
+//    if (String(json["state"].as<char*>()) == "ON")
+//      return_Value.state = true;
+//    return_Value.brightness = json["brightness"].as<byte>();
+//    return_Value.color_temp = json["color_temp"].as<int>();
+//
+//    return_Value.R = json["color"]["r"].as<byte>();
+//    return_Value.G = json["color"]["g"].as<byte>();
+//    return_Value.B = json["color"]["b"].as<byte>();
+//    Serial.println("Done");    //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+//    return return_Value;
+//  }
+//}
