@@ -10,9 +10,9 @@ class CLog {
     byte Counter = 0;
     void Add(String MSG) {
 #ifdef SerialEnabled
-      Serial.println("LOG: " + MSG);
+      Serial.println("LOG " + String(millis()) + ": " + MSG);
 #endif //SerialEnabled
-      List[Counter] = MSG;
+      List[Counter] = String(millis()) + ": " + MSG;
       Counter++;
       if (Counter >= Amount)
         Counter = 0;
