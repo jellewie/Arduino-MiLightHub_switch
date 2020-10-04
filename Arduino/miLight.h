@@ -26,15 +26,15 @@ byte SetLight(MiLight Light, String Content) {
   WiFiClient client;
   client.setTimeout(1000);
   if (!client.connect(MiLight_IP, 80)) {            //(Try) connect to hub
-#ifdef milight_SerialEnabled
-    Serial.println("ML: #ERROR Cant connect to HUB '" + String(MiLight_IP) + "" + "'");
-#endif //milight_SerialEnabled
+#ifdef milight_Log
+    Log.Add("ML: #ERROR Cant connect to HUB '" + String(MiLight_IP) + "" + "'");
+#endif //milight_Log
     Blink_Amount(LED_BUILTIN, 200, 10);             //Can't connect to hub: Just blink a bit to show this error
     return mi_HUB_OFFLINE;                          //Stop here, no reason to move on
   }
-#ifdef milight_SerialEnabled
-  Serial.println("ML: PUT " + path + " HTTP/1.1" + "_Host: " + String(MiLight_IP) + "_Data=" + Content);
-#endif //milight_SerialEnabled
+#ifdef milight_Log
+  Log.Add("ML: PUT " + path + " HTTP/1.1" + "_Host: " + String(MiLight_IP) + "_Data=" + Content);
+#endif //milight_Log
   client.println("PUT " + path + " HTTP/1.1");
   client.println("Content-Length: " + String(Content.length()));
   client.println("Content-Type: application/json");
@@ -60,9 +60,9 @@ byte SetLight(MiLight Light, String Content) {
     if (connectLoop <= 0)   //If loop counter = 0
       return mi_TIMEOUT;             //Stop, we had a timeout
   }
-#ifdef milight_SerialEnabled
-  Serial.println("ML: Responcecode=" + String(Responcecode));
-#endif //milight_SerialEnabled
+#ifdef milight_Log
+  Log.Add("ML: Responcecode=" + String(Responcecode));
+#endif //milight_Log
   if (Responcecode == 200)
     return mi_DONE;
   if (Responcecode == 400)
@@ -78,9 +78,9 @@ byte SetLight(MiLight Light, String Content) {
 //  client.setTimeout(1000);
 //  Serial.println("boot");    //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
 //  if (!client.connect(MiLight_IP, 80)) {            //(Try) connect to hub
-//#ifdef milight_SerialEnabled
-//    Serial.println("ML: #ERROR Cant connect to HUB '" + String(MiLight_IP) + "" + "'");
-//#endif //milight_SerialEnabled
+//#ifdef milight_Log
+//    Log.Add("ML: #ERROR Cant connect to HUB '" + String(MiLight_IP) + "" + "'");
+//#endif //milight_Log
 //    Blink_Amount(LED_BUILTIN, 200, 10);                            //Can't connect to hub: Just blink a bit to show this error
 //    return return_Value;
 //  } else {

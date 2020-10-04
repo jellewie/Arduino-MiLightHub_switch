@@ -10,9 +10,9 @@ bool StringisDigit(String IN) {
   return true;
 }
 byte ConvertRotationToByte(String IN) {
-#ifdef Convert_SerialEnabled
-  Serial.println("CV: ConvertRotationToByte '" + String(IN) + "'");
-#endif //Convert_SerialEnabled
+#ifdef Convert_Log
+  Log.Add("CV: ConvertRotationToByte '" + String(IN) + "'");
+#endif //Convert_Log
   if (StringisDigit(IN)) {
     if (IN.toInt() < Rotation_Amount)
       return IN.toInt();
@@ -28,9 +28,9 @@ byte ConvertRotationToByte(String IN) {
   return UNK;
 }
 String ConvertRotationToString(byte IN) {
-#ifdef Convert_SerialEnabled
-  Serial.println("CV: ConvertRotationToString '" + String(IN) + "'");
-#endif //Convert_SerialEnabled
+#ifdef Convert_Log
+  Log.Add("CV: ConvertRotationToString '" + String(IN) + "'");
+#endif //Convert_Log
   if (IN < Rotation_Amount)
     return RotationNames[IN];
   return "UNK";

@@ -14,14 +14,20 @@
 #error "Please check if the 'DOIT ESP32 DEVKIT V1' board is selected, which can be downloaded at https://dl.espressif.com/dl/package_esp32_index.json"
 #endif
 
-#define SerialEnabled
+//#define SerialEnabled
+#define Logging
+
 #ifdef SerialEnabled
+#define Logging
 #define WiFiManager_SerialEnabled
-#define milight_SerialEnabled
-#define Speed_SerialEnabled
-//#define Convert_SerialEnabled
 //#define Extra_SerialEnabled
 #endif //SerialEnabled
+
+#ifdef Logging
+#define milight_Log
+#define Speed_Log
+//Convert_Log
+#endif //Logging
 
 #include <WiFi.h>             //Needed for WiFi stuff
 #include <WiFiClient.h>       //Needed for sending data to devices
@@ -31,6 +37,7 @@
 #include <ESPmDNS.h>
 WebServer server(80);
 extern void WiFiManager_CheckAndReconnectIfNeeded();
+#include "Log.h"
 #include "OTA.h"
 #include "functions.h"
 #include "miLight.h"
@@ -70,7 +77,7 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
   //===========================================================================
-  //Load data, since we need this for the rotation
+  //Load data, since we need this to check if RotationB is !UNUSED)
   //===========================================================================
   WiFiManager.LoadData();
   //===========================================================================
@@ -135,6 +142,7 @@ void setup() {
   server.on("/ota",               OTA_handle_uploadPage);
   server.on("/update", HTTP_POST, OTA_handle_update, OTA_handle_update2);
   server.on("/restart",           handle_Restart);
+  server.on("/log",               handle_Log);
   server.onNotFound(              HandleNotFound);
   //===========================================================================
   //Start WIFI
@@ -198,17 +206,20 @@ void Check(Button_Time Value, MiLight Light, String Action, byte LEDpin, byte Bu
 #ifdef Extra_SerialEnabled
   Serial.println("b" + String(ButtonID) + "=" + String(Value.Pressed) + " S=" + String(Value.StartPress) + " L=" + String(Value.PressedLong) + " SL=" + String(Value.StartLongPress) + " LEDpin=" + String(LEDpin));
 #endif //Extra_SerialEnabled
-#ifdef Speed_SerialEnabled
+#ifdef Speed_Log
   unsigned long StartMS = 0;
-#endif //Speed_SerialEnabled
+#endif //Speed_Log
   if (Value.StartPress) {                               //If button is just pressed in
-#ifdef Speed_SerialEnabled
+#ifdef Speed_Log
     StartMS = millis();
-#endif //Speed_SerialEnabled
+#endif //Speed_Log
     if (LEDpin > 0) digitalWrite(LEDpin, HIGH);         //If a LED pin was given; Set that buttons LED on
-    for (int TryAgain = 3; TryAgain > 0; TryAgain--) {                       //Where i is amount of tries tries to do
+    for (int TryAgain = 3; TryAgain > 0; TryAgain--) {  //Where TryAgain is amount of tries tries to do
       byte Feedback = SetLight(Light, Action);
       switch (Feedback) {
+        case mi_UNDEF:        //Keep trying again
+
+          break;
         case mi_DONE:
           TryAgain = 0;                                 //  Do not try again
           break;
@@ -221,15 +232,18 @@ void Check(Button_Time Value, MiLight Light, String Action, byte LEDpin, byte Bu
 #endif //SerialEnabled
           TryAgain = 0;                                 //  Do not try again
           break;
+        case mi_UNK:        //Keep trying again
+
+          break;
         case mi_TIMEOUT:
           TryAgain = 0;                                 //  Do not try again
           break;
       }
     }
     if (LEDpin > 0) digitalWrite(LEDpin, LOW);          //If a LED pin was given; Set that buttons LED off
-#ifdef Speed_SerialEnabled
-    Serial.println("Command processing time (start to finisch)=" + String(millis() - StartMS));
-#endif //Speed_SerialEnabled
+#ifdef Speed_Log
+    Log.Add("Command processing time (start to finisch)=" + String(millis() - StartMS) + "ms");
+#endif //Speed_Log
   } else if (Value.StartLongPress) {
     if (ButtonID == 0) {
       OTA.Enabled = !OTA.Enabled;                       //Toggle OTA on/off
@@ -280,6 +294,10 @@ byte RotateButtonID(byte Rotation, byte i) {
 //===========================================================================
 
 void handle_Restart() {
+#ifdef SerialEnabled
+  Serial.println("handle_Restart");
+#endif //SerialEnabled
+  server.send(200, "text/html", "OK, resetting...");
   ESP.restart();
 }
 void ISR_A0() {

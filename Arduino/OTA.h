@@ -7,7 +7,7 @@
 #include <Update.h>
 class COTA {
   public:
-    String UpdateWebpage = "<a href=\"https://github.com/jellewie/Arduino-MiLightHub_switch/releases\">Github.com/jellewie/Arduino-MiLightHub_switch/releases</a>";    
+    String UpdateWebpage = "<a href=\"https://github.com/jellewie/Arduino-MiLightHub_switch/releases\">Github.com/jellewie/Arduino-MiLightHub_switch/releases</a>";
     bool Enabled;
     void handle_uploadPage() {
 #ifdef OTA_SerialEnabled
