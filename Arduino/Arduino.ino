@@ -2,13 +2,6 @@
   Program written by JelleWho
   Board: https://dl.espressif.com/dl/package_esp32_index.json
   Sketch from: https://github.com/jellewie/Arduino-MiLightHub_switch
-
-  FIXME?
-  On boot button stuck, when released, the buttonpressed interupt has happened, and pressed/longpressed will be executed
-  Make a manual, and descibe things like 'button 1 (ID0) is Enable_OTA and settings page'
-  Maybe Reset button in the webb app?
-
-  NOTE: adding a second pair RotationB requires a reboot
 */
 #if !defined(ESP32)
 #error "Please check if the 'DOIT ESP32 DEVKIT V1' board is selected, which can be downloaded at https://dl.espressif.com/dl/package_esp32_index.json"
@@ -31,7 +24,7 @@
 
 #include <WiFi.h>             //Needed for WiFi stuff
 #include <WiFiClient.h>       //Needed for sending data to devices
-#include <WebServer.h>        //This is to create a acces point with wifimanager if no wifi is set
+#include <WebServer.h>        //This is to create an access point with wifimanager if no WiFi is set
 #include <ArduinoJson.h>      //This is to pack/unpack data send to the hub
 #include <rom/rtc.h>          //This is for rtc_get_reset_reason
 #include <ESPmDNS.h>
@@ -57,14 +50,14 @@ byte RotationA = NORMAL;                          //SOFT_SETTING Rotation of the
 byte RotationB = UNUSED;                          // ^           RIGHT=PCB 90° clockwise to case
 MiLight LightA = {"0xF001", "rgb_cct", 1};        //SOFT_SETTING What light to control
 MiLight LightB = {"0xF002", "rgb_cct", 1};        // ^           device_id, remote_type, group_id
-const byte Amount_Buttons = sizeof(SwitchA) / sizeof(SwitchA[0]);                       //Why filling this in if we can automate that? :)
-String CommandsA[Amount_Buttons] = {"{'commands':['toggle']}",                          //SOFT_SETTING what command the button IDs do
-                                    "{'brightness':150,'color_temp':500,'state':'On'}",
-                                    "{'brightness':255,'color_temp':999,'state':'On'}",
-                                    "{'brightness':255,'color_temp':1,'state':'On'}"
+const byte Amount_Buttons = sizeof(SwitchA) / sizeof(SwitchA[0]);                         //Why filling this in if we can automate that? :)
+String CommandsA[Amount_Buttons] = {"{'commands':['toggle']}",                            //SOFT_SETTING what command which button sends (Example of toggle) 
+                                    "{'brightness':60,'color':'255,50,10','state':'On'}", //(Example of RGB)
+                                    "{'brightness':255,'color_temp':999,'state':'On'}",   //(Example of CC/WW)
+                                    "{'brightness':255,'color_temp':1,'state':'On'}"      //For more see https://sidoh.github.io/esp8266_milight_hub/branches/1.10.6/ Please note not all commands might be supported by your bulb 
                                    };
 String CommandsB[Amount_Buttons] = {"{'commands':['toggle']}",                          // ^
-                                    "{'brightness':150,'color_temp':500,'state':'On'}",
+                                    "{'brightness':60,'color':'255,50,10','state':'On'}",
                                     "{'brightness':255,'color_temp':999,'state':'On'}",
                                     "{'brightness':255,'color_temp':1,'state':'On'}"
                                    };
@@ -81,13 +74,13 @@ void setup() {
   //===========================================================================
   WiFiManager.LoadData();
   //===========================================================================
-  //Attach interupts to the button pins so we can responce if they change
+  //Attach interrupts to the button pins so we can response if they change
   //===========================================================================
   attachInterrupt(SwitchA[0].Data.PIN_Button, ISR_A0, CHANGE);
   attachInterrupt(SwitchA[1].Data.PIN_Button, ISR_A1, CHANGE);
   attachInterrupt(SwitchA[2].Data.PIN_Button, ISR_A2, CHANGE);
   attachInterrupt(SwitchA[3].Data.PIN_Button, ISR_A3, CHANGE);
-  if (RotationB != UNUSED) {                                    //Do not attach interupt if this switch set is unused
+  if (RotationB != UNUSED) {                                    //Do not attach interrupt if this switch set is unused
     attachInterrupt(SwitchB[0].Data.PIN_Button, ISR_B0, CHANGE);
     attachInterrupt(SwitchB[1].Data.PIN_Button, ISR_B1, CHANGE);
     attachInterrupt(SwitchB[2].Data.PIN_Button, ISR_B2, CHANGE);
@@ -108,7 +101,7 @@ void setup() {
     //Example '00001001' = Buttons 1 and 4 are HIGH (Note we count from LSB)
     byte ButtonID = 0;
     for (byte i = 0; i < Amount_Buttons; i++) {
-      ButtonID = ButtonID << 1;                     //Move bits 1 to the left (its like *2)
+      ButtonID = ButtonID << 1;                     //Move bits 1 to the left (it’s like *2)
       Button_Time Value = SwitchA[i].CheckButton();
       if (Value.Pressed) {
         ButtonID += 1;                              //Flag this button as on
@@ -118,7 +111,7 @@ void setup() {
     }
     if (RotationB != UNUSED) {
       for (byte i = 0; i < Amount_Buttons; i++) {
-        ButtonID = ButtonID << 1;                   //Move bits 1 to the left (its like *2)
+        ButtonID = ButtonID << 1;                   //Move bits 1 to the left (it’s like *2)
         Button_Time Value = SwitchB[i].CheckButton();
         if (Value.Pressed) {
           ButtonID += 1;                            //Flag this button as on
@@ -137,8 +130,8 @@ void setup() {
   //===========================================================================
   //Initialise server stuff
   //===========================================================================
-  server.on("/",                  WiFiManager_handle_Connect);    //Must be declaired before "WiFiManager.Start()" for APMode
-  server.on("/setup",             WiFiManager_handle_Settings);   //Must be declaired before "WiFiManager.Start()" for APMode
+  server.on("/",                  WiFiManager_handle_Connect);    //Must be declared before "WiFiManager.Start()" for APMode
+  server.on("/setup",             WiFiManager_handle_Settings);   //Must be declared before "WiFiManager.Start()" for APMode
   server.on("/ota",               OTA_handle_uploadPage);
   server.on("/update", HTTP_POST, OTA_handle_update, OTA_handle_update2);
   server.on("/restart",           handle_Restart);
@@ -156,7 +149,7 @@ void setup() {
   }
   WiFiManager.StartServer();      //Start the server
   //===========================================================================
-  //Get Reset reason (This could be/is usefull for power outage)
+  //Get Reset reason (This could be/is useful for power outage)
   //===========================================================================
 #ifdef SerialEnabled
   if (byte Reason = GetResetReason()) {
