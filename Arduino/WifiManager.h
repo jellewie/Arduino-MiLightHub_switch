@@ -15,8 +15,8 @@
    -"Set_Value"     Set the action on what to do on startup with this value
    -"Get_Value"     [optional] Set the action on what to fill in in the boxes in the 'AP settings portal'
 */
-#ifndef WifiManager_h                               //This prevents including this file more than once
-#define WifiManager_h
+#ifndef WiFiManager_h                               //This prevents including this file more than once
+#define WiFiManager_h
 
 //#define WiFiManager_SerialEnabled                 //Disable to not send Serial debug feedback
 //#define dnsServerEnabled
@@ -31,9 +31,7 @@ const String WiFiManager_VariableNames[] {"SSID", "Password", "Name", "MiLight_I
   "Button A1", "Button A2", "Button A3", "Button A4", "LightA ID", "LightA type", "LightA group", "Rotation A",
   "Button B1", "Button B2", "Button B3", "Button B4", "LightB ID", "LightB type", "LightB group", "Rotation B"
 };
-
 const byte WiFiManager_Settings = sizeof(WiFiManager_VariableNames) / sizeof(WiFiManager_VariableNames[0]); //Why filling this in if we can automate that? :)
-bool WiFiManager_Connected;                         //If the ESP is WiFiManager_Connected to WIFI
 
 class CWiFiManager {
   public:
@@ -48,7 +46,7 @@ class CWiFiManager {
     char password[16] = "";                         //Also efines howmany characters can be in the SSID
     char ssid[16] = "";                             //^
     //#define strip_ip, gateway_ip, subnet_mask to use static IP
-    char* APSSID = Name;
+    char* APSSID = Name;                            //If you want to define the name somewhere else use 'char* APSSID = Name'
     const int EEPROM_size = 512;                    //Max Amount of chars of 'SSID + PASSWORD' (+1) (+extra custom vars)
     const byte Pin_LED  = LED_BUILTIN;              //The LED to give feedback on (like blink on error)
     bool Set_Value(byte ValueID, String Value) {
@@ -248,7 +246,7 @@ class CWiFiManager {
     void EnableSetup(bool State) {                  //Enable/disable setup page
 #ifdef WiFiManager_SerialEnabled
       if (State) {
-        if (WiFiManager_Connected)
+        if (WiFi.status() == WL_CONNECTED)
           Serial.println("WM: Settings page online");
         else {
           Serial.print("WM: Settings page online ip=");
@@ -286,7 +284,7 @@ class CWiFiManager {
       Serial.println(WiFi.softAPIP());
 #endif //WiFiManager_SerialEnabled
       while (WaitOnAPMode) {
-        if (TickEveryMS(100)) Status_Blink();       //Let the LED blink to show we are not WiFiManager_Connected
+        if (TickEveryMS(100)) Status_Blink();       //Let the LED blink to show we are not connected
         server.handleClient();
 #ifdef dnsServerEnabled
         dnsServer.processNextRequest();
@@ -360,6 +358,8 @@ class CWiFiManager {
       return 0;
     }
     bool Connect(int TimeOutMS) {
+      if ((strlen(ssid) == 0 or strlen(password) == 0)) //If no SSID or password given
+        return false;
 #ifdef WiFiManager_SerialEnabled
       Serial.println("WM: Connecting to ssid='" + String(ssid) + "' password='" + String(password) + "'");
 #endif //WiFiManager_SerialEnabled
@@ -381,32 +381,23 @@ class CWiFiManager {
       return true;
     }
     byte Start() {                                  //Start all WIFI stuff
-      Status_Start();
-      //starts wifi stuff, only returns when WiFiManager_Connected. will create Acces Point when needed
+      //starts wifi stuff, only returns true when Connected. Will create AP when needed
       /* <Return> <meaning>
          2 Can't begin EEPROM
          3 Can't write [all] data to EEPROM
       */
+      Status_Start();
       if (ssid[0] == 0 and password[0] == 0)        //If the ssid and password are not yet in memory
-        if (byte temp = LoadData()) return temp;    //load the EEPROM to get the ssid and password. Exit with code if failed
-      bool FlagApMode = false;
-      while (!WiFiManager_Connected) {
-        if ((strlen(ssid) == 0 or strlen(password) == 0 or FlagApMode)) {
-          FlagApMode = false;
-          APMode();                                 //No ssid or password given, or ssid not found. Entering APmode
-        } else {
-          if (Connect(ConnectionTimeOutMS)) //try to WiFiManager_Connected to ssid password
-            WiFiManager_Connected = true;
-          else
-            FlagApMode = true;                      //Flag so we will enter AP mode
-        }
+        if (byte temp = LoadData()) return temp;    //Load the EEPROM to get the ssid and password. Exit with code if failed
+      while (WiFi.status() != WL_CONNECTED) {
+        if (!Connect(ConnectionTimeOutMS))          //Try to connected to ssid+password
+          APMode();                                 //If we could not connector for whatever reason, Entering APmode
       }
       Status_Done();
 #ifdef WiFiManager_SerialEnabled
       Serial.print("WM: Connected; SSID=" + String(ssid) + " ip=");
       Serial.println(WiFi.localIP());
 #endif //WiFiManager_SerialEnabled
-      WiFiManager_Connected = true;
       return 1;
     }
     bool WriteEEPROM() {
@@ -428,9 +419,19 @@ class CWiFiManager {
       EEPROM_USED = Value.length();
       return true;
     }
-    bool RunServer() {
-      if (WiFiManager_Connected) server.handleClient();
-      return WiFiManager_Connected;
+    bool ClearEEPROM() {
+#ifdef WiFiManager_SerialEnabled
+      Serial.println("WM: EEPROM CLEAR");
+#endif //WiFiManager_SerialEnabled
+      if (!EEPROM.begin(EEPROM_size))
+        return false;
+      for (int i = 0; i < EEPROM_size; i++)         //For each character to save
+        EEPROM.write(i, 0);                         //Clear the EEPROM bit
+      EEPROM.commit();
+      return true;
+    }
+    void RunServer() {
+      if (WiFi.status() == WL_CONNECTED) server.handleClient();
     }
     void handle_Connect() {
       if (!SettingsEnabled) return;                 //If settingscommand is disabled: Stop right away, and do noting
@@ -476,23 +477,19 @@ class CWiFiManager {
 #endif //WiFiManager_SerialEnabled
         OldSSID = String(ssid);
         Oldpassword = String(password);
-        WiFiManager_Connected = false;              //Flag that WIFI is off, and we need to reconnect (In case user requested to switch WIFI)
+        WiFi.disconnect();                          //we need to reconnect (user requested to switch WIFI)
       }
     }
-    void CheckAndReconnectIfNeeded() {
-      //Checks if WIFI is connected, and if so tries to reconnect
-      IPAddress MyIp = WiFi.localIP();
-      if (MyIp[0] == 0 and MyIp[1] == 0 and MyIp[2] == 0 and MyIp[3] == 0) {
-#ifdef WiFiManager_SerialEnabled
-        Serial.println("WM: Ip lost, reconnecting, ip=" + String(MyIp[0]) + "." + String(MyIp[1]) + "." + String(MyIp[2]) + "." + String(MyIp[3]));
-#endif //WiFiManager_SerialEnabled
-        Start();
-      } else {
-#ifdef WiFiManager_SerialEnabled
-        Serial.println("WM: Still connected :) , ip=" + String(MyIp[0]) + "." + String(MyIp[1]) + "." + String(MyIp[2]) + "." + String(MyIp[3]));
-#endif //WiFiManager_SerialEnabled
+    bool CheckAndReconnectIfNeeded(bool AllowAPmode) {
+      if (WiFi.status() != WL_CONNECTED) {
+        if (AllowAPmode)
+          Start();
+        else
+          Connect(ConnectionTimeOutMS);
+        if (WiFi.status() != WL_CONNECTED)  //If still not connected
+          return false;
       }
-
+      return true;
     }
 #ifdef WiFiManager_SerialEnabled
     String ConvertWifistatus(byte IN) {
@@ -535,8 +532,4 @@ void WiFiManager_handle_Connect() {
 void WiFiManager_handle_Settings() {
   WiFiManager.handle_Settings();
 }
-void WiFiManager_CheckAndReconnectIfNeeded() {
-  WiFiManager.CheckAndReconnectIfNeeded();
-}
-
 #endif

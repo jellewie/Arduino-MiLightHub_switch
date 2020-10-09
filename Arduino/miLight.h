@@ -21,7 +21,7 @@ byte SetLight(MiLight Light, String Content) {
     4= unknown error
     5= Timeout recieving responce code
   */
-  WiFiManager_CheckAndReconnectIfNeeded();
+  WiFiManager_CheckAndReconnectIfNeeded(false);
   String path = "/gateways/" + Light.device_id + "/" + Light.remote_type + "/" + String(Light.group_id);
   WiFiClient client;
   client.setTimeout(1000);

@@ -21,6 +21,7 @@
 #define Speed_Log
 //Convert_Log
 #endif //Logging
+extern void WiFiManager_CheckAndReconnectIfNeeded(bool AllowAPmode);    //Extern meaning we are declairing it somewhere later, needed of MiLight::SetLight
 
 #include <WiFi.h>             //Needed for WiFi stuff
 #include <WiFiClient.h>       //Needed for sending data to devices
@@ -29,7 +30,6 @@
 #include <rom/rtc.h>          //This is for rtc_get_reset_reason
 #include <ESPmDNS.h>
 WebServer server(80);
-extern void WiFiManager_CheckAndReconnectIfNeeded();
 #include "Log.h"
 #include "OTA.h"
 #include "functions.h"
@@ -51,10 +51,10 @@ byte RotationB = UNUSED;                          // ^           RIGHT=PCB 90° 
 MiLight LightA = {"0xF001", "rgb_cct", 1};        //SOFT_SETTING What light to control
 MiLight LightB = {"0xF002", "rgb_cct", 1};        // ^           device_id, remote_type, group_id
 const byte Amount_Buttons = sizeof(SwitchA) / sizeof(SwitchA[0]);                         //Why filling this in if we can automate that? :)
-String CommandsA[Amount_Buttons] = {"{'commands':['toggle']}",                            //SOFT_SETTING what command which button sends (Example of toggle) 
+String CommandsA[Amount_Buttons] = {"{'commands':['toggle']}",                            //SOFT_SETTING what command which button sends (Example of toggle)
                                     "{'brightness':60,'color':'255,50,10','state':'On'}", //(Example of RGB)
                                     "{'brightness':255,'color_temp':999,'state':'On'}",   //(Example of CC/WW)
-                                    "{'brightness':255,'color_temp':1,'state':'On'}"      //For more see https://sidoh.github.io/esp8266_milight_hub/branches/1.10.6/ Please note not all commands might be supported by your bulb 
+                                    "{'brightness':255,'color_temp':1,'state':'On'}"      //For more see https://sidoh.github.io/esp8266_milight_hub/branches/1.10.6/ Please note not all commands might be supported by your bulb
                                    };
 String CommandsB[Amount_Buttons] = {"{'commands':['toggle']}",                          // ^
                                     "{'brightness':60,'color':'255,50,10','state':'On'}",
@@ -62,6 +62,9 @@ String CommandsB[Amount_Buttons] = {"{'commands':['toggle']}",                  
                                     "{'brightness':255,'color_temp':1,'state':'On'}"
                                    };
 #include "WiFiManager.h"
+void WiFiManager_CheckAndReconnectIfNeeded(bool AllowAPmode) {
+  WiFiManager.CheckAndReconnectIfNeeded(AllowAPmode);
+}
 
 void setup() {
 #ifdef SerialEnabled
