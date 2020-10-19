@@ -21,15 +21,30 @@
 #define Speed_Log
 //Convert_Log
 #endif //Logging
-extern void WiFiManager_CheckAndReconnectIfNeeded(bool AllowAPmode);    //Extern meaning we are declairing it somewhere later, needed of MiLight::SetLight
 
-#include <WiFi.h>             //Needed for WiFi stuff
+char Name[16] = "milight-switch";                 //The mDNS, WIFI APmode SSID name. This requires a restart to apply, can only be 16 characters long, and special characters are not recommended.
+
+#define WiFiManagerUser_Set_Value_Defined                       //Define we want to hook into WiFiManager
+#define WiFiManagerUser_Get_Value_Defined                       //^
+#define WiFiManagerUser_Status_Start_Defined                    //^
+#define WiFiManagerUser_Status_Done_Defined                     //^
+#define WiFiManagerUser_Status_Blink_Defined                    //^
+#define WiFiManagerUser_Status_StartAP_Defined                  //^
+#define WiFiManagerUser_HandleAP_Defined                        //^
+#define WiFiManagerUser_VariableNames_Defined                   //Define that we want to use the custom user variables (Dont forget to settup WiFiManager_VariableNames and WiFiManager_Settings)
+const String WiFiManager_VariableNames[] {"SSID", "Password", "Name", "MiLight_IP",
+  "Button A1", "Button A2", "Button A3", "Button A4", "LightA ID", "LightA type", "LightA group", "Rotation A",
+  "Button B1", "Button B2", "Button B3", "Button B4", "LightB ID", "LightB type", "LightB group", "Rotation B"
+};
+const int EEPROM_size = 512;                                    //Max Amount of chars for 'SSID(16) + PASSWORD(16) + extra custom vars(?) +1(NULL)' defaults to 33
+#define WiFiManagerUser_APSSID_Defined
+char* APSSID = Name;                                            //If you want to define the name somewhere else use 'char* APSSID = Name'
+#include "WiFiManager/WiFiManager.h"                            //Includes <WiFi> and <WebServer.h> and setups up 'WebServer server(80)' if needed      https://github.com/jellewie/Arduino-WiFiManager
+
 #include <WiFiClient.h>       //Needed for sending data to devices
-#include <WebServer.h>        //This is to create an access point with wifimanager if no WiFi is set
 #include <ArduinoJson.h>      //This is to pack/unpack data send to the hub
 #include <rom/rtc.h>          //This is for rtc_get_reset_reason
 #include <ESPmDNS.h>
-WebServer server(80);
 #include "Log.h"
 #include "OTA.h"
 #include "functions.h"
@@ -43,7 +58,6 @@ const buttons SetE = {26, 23};
 const buttons SetF = {27, 22};
 const buttons SetG = {14,  4};
 const buttons SetH = {12, 15};
-char Name[16] = "milight-switch";                 //The mDNS, WIFI APmode SSID name. This requires a restart to apply, can only be 16 characters long, and special characters are not recommended.
 Button SwitchA[4] = {SetA, SetB, SetC, SetD};     //Bunch up the 4 buttons to be 1 switch set
 Button SwitchB[4] = {SetE, SetF, SetG, SetH};     // ^
 byte RotationA = NORMAL;                          //SOFT_SETTING Rotation of the PCB seen from the case
@@ -61,10 +75,7 @@ String CommandsB[Amount_Buttons] = {"{'commands':['toggle']}",                  
                                     "{'brightness':255,'color_temp':999,'state':'On'}",
                                     "{'brightness':255,'color_temp':1,'state':'On'}"
                                    };
-#include "WiFiManager.h"
-void WiFiManager_CheckAndReconnectIfNeeded(bool AllowAPmode) {
-  WiFiManager.CheckAndReconnectIfNeeded(AllowAPmode);
-}
+#include "WiFiManagerUser.h"                      //Define custon functions to hook into WiFiManager
 
 void setup() {
 #ifdef SerialEnabled
