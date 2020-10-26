@@ -1,4 +1,7 @@
 /* Written by JelleWho https://github.com/jellewie */
+#ifndef Button_h                      //This prevents including this file more than once
+#define Button_h
+
 #define Time_StartLongPressMS 5000    //After howmuch Ms we should consider a press a long press
 #define Time_ESPrestartMS 10000       //After howmuch Ms we should restart the ESP, note this is only triggered on released, or on a CheckButtons() call
 #define Time_StartDoublePress 300     //Withing howmuch Ms of the last release should the button be pressed for it to be a double press?
@@ -76,9 +79,9 @@ class Button {
         State.PressEnded = false;
         StartLongFlagged = false;
         StartReleaseFlagged = false;
-        ButtonStartTime = millis();                               //Save the start time
-        unsigned long ElapsedTimeSinceLast = ButtonStartTime - LastButtonEndTime;
+        unsigned long ElapsedTimeSinceLast = millis() - LastButtonEndTime;
         if (ElapsedTimeSinceLast > Time_RejectStarts) {
+          ButtonStartTime = millis();                             //Save the start time
           State.StartPress = true;
           if (ElapsedTimeSinceLast < Time_StartDoublePress) {
             State.StartDoublePress = true;
@@ -95,3 +98,4 @@ class Button {
     }
 };
 //resetFunc(); is a reset function for Arduino itself I believe
+#endif
