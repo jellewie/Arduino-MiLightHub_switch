@@ -22,7 +22,7 @@ bool WiFiManagerUser_Set_Value(byte ValueID, String Value) {
   switch (ValueID) {                                            //Note the numbers are shifted from what is in memory, 0 is the first user value
     case 0:
       if (Value.length() > sizeof(Name))        return false;   //Length is to long, it would not fit so stop here
-      Value.toCharArray(MiLight_IP, 16);        return true;
+      Value.toCharArray(Name, 16);              return true;
       break;
     case 1:
       if (Value.length() > sizeof(MiLight_IP))  return false;   //Length is to long, it would not fit so stop here
