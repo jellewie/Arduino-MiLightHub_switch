@@ -22,31 +22,31 @@
 //Convert_Log
 #endif //Logging
 
-char Name[16] = "milight-switch";                 //The mDNS, WIFI APmode SSID name. This requires a restart to apply, can only be 16 characters long, and special characters are not recommended.
-
-#define WiFiManagerUser_Set_Value_Defined                       //Define we want to hook into WiFiManager
-#define WiFiManagerUser_Get_Value_Defined                       //^
-#define WiFiManagerUser_Status_Start_Defined                    //^
-#define WiFiManagerUser_Status_Done_Defined                     //^
-#define WiFiManagerUser_Status_Blink_Defined                    //^
-#define WiFiManagerUser_Status_StartAP_Defined                  //^
-#define WiFiManagerUser_HandleAP_Defined                        //^
-#define WiFiManagerUser_VariableNames_Defined                   //Define that we want to use the custom user variables (Dont forget to settup WiFiManager_VariableNames and WiFiManager_Settings)
+char Name[16] = "milight-switch";                       //The mDNS, WIFI APmode SSID name. This requires a restart to apply, can only be 16 characters long, and special characters are not recommended.
+#define WiFiManagerUser_Set_Value_Defined               //Define we want to hook into WiFiManager
+#define WiFiManagerUser_Get_Value_Defined               //^
+#define WiFiManagerUser_Status_Start_Defined            //^
+#define WiFiManagerUser_Status_Done_Defined             //^
+#define WiFiManagerUser_Status_Blink_Defined            //^
+#define WiFiManagerUser_Status_StartAP_Defined          //^
+#define WiFiManagerUser_HandleAP_Defined                //^
+#define WiFiManagerUser_Name_Defined
+#define WiFiManagerUser_VariableNames_Defined           //Define that we want to use the custom user variables (Dont forget to settup WiFiManager_VariableNames and WiFiManager_Settings)
 const String WiFiManager_VariableNames[] {"SSID", "Password", "Name", "MiLight_IP",
   "Button A1", "Button A2", "Button A3", "Button A4", "LightA ID", "LightA type", "LightA group", "Rotation A",
   "Button B1", "Button B2", "Button B3", "Button B4", "LightB ID", "LightB type", "LightB group", "Rotation B"
 };
-const int EEPROM_size = 512;                                    //Max Amount of chars for 'SSID(16) + PASSWORD(16) + extra custom vars(?) +1(NULL)' defaults to 33
-#define WiFiManagerUser_APSSID_Defined
-char* APSSID = Name;                                            //If you want to define the name somewhere else use 'char* APSSID = Name'
-#include "WiFiManager/WiFiManager.h"                            //Includes <WiFi> and <WebServer.h> and setups up 'WebServer server(80)' if needed      https://github.com/jellewie/Arduino-WiFiManager
+const int EEPROM_size = 512;                            //Max Amount of chars for 'SSID(16) + PASSWORD(16) + extra custom vars(?) +1(NULL)' defaults to 33
+#define WiFiManager_mDNS
+#define WiFiManager_OTA
+#define WiFiManagerUser_UpdateWebpage_Defined
+const String UpdateWebpage = "https://github.com/jellewie/Arduino-MiLightHub_switch/releases";
+#include "WiFiManager/WiFiManager.h"                    //Includes <WiFi> and <WebServer.h> and setups up 'WebServer server(80)' if needed      https://github.com/jellewie/Arduino-WiFiManager
 
-#include <WiFiClient.h>       //Needed for sending data to devices
-#include <ArduinoJson.h>      //This is to pack/unpack data send to the hub
-#include <rom/rtc.h>          //This is for rtc_get_reset_reason
-#include <ESPmDNS.h>
+#include <WiFiClient.h>                                 //Needed for sending data to devices
+#include <ArduinoJson.h>                                //This is to pack/unpack data send to the hub
+#include <rom/rtc.h>                                    //This is for rtc_get_reset_reason
 #include "Log.h"
-#include "OTA.h"
 #include "functions.h"
 #include "miLight.h"
 #include "Button/Button.h"                              //https://github.com/jellewie/Arduino-Button
@@ -58,12 +58,12 @@ const buttons SetE = {26, 23};
 const buttons SetF = {27, 22};
 const buttons SetG = {14,  4};
 const buttons SetH = {12, 15};
-Button SwitchA[4] = {SetA, SetB, SetC, SetD};     //Bunch up the 4 buttons to be 1 switch set
-Button SwitchB[4] = {SetE, SetF, SetG, SetH};     // ^
-byte RotationA = NORMAL;                          //SOFT_SETTING Rotation of the PCB seen from the case
-byte RotationB = UNUSED;                          // ^           RIGHT=PCB 90° clockwise to case
-MiLight LightA = {"0xF001", "rgb_cct", 1};        //SOFT_SETTING What light to control
-MiLight LightB = {"0xF002", "rgb_cct", 1};        // ^           device_id, remote_type, group_id
+Button SwitchA[4] = {SetA, SetB, SetC, SetD};           //Bunch up the 4 buttons to be 1 switch set
+Button SwitchB[4] = {SetE, SetF, SetG, SetH};           // ^
+byte RotationA = NORMAL;                                //SOFT_SETTING Rotation of the PCB seen from the case
+byte RotationB = UNUSED;                                // ^           RIGHT=PCB 90° clockwise to case
+MiLight LightA = {"0xF001", "rgb_cct", 1};              //SOFT_SETTING What light to control
+MiLight LightB = {"0xF002", "rgb_cct", 1};              // ^           device_id, remote_type, group_id
 const byte Amount_Buttons = sizeof(SwitchA) / sizeof(SwitchA[0]);                         //Why filling this in if we can automate that? :)
 String CommandsA[Amount_Buttons] = {"{'commands':['toggle']}",                            //SOFT_SETTING what command which button sends (Example of toggle)
                                     "{'brightness':60,'color':'255,50,10','state':'On'}", //(Example of RGB)
@@ -75,7 +75,7 @@ String CommandsB[Amount_Buttons] = {"{'commands':['toggle']}",                  
                                     "{'brightness':255,'color_temp':999,'state':'On'}",
                                     "{'brightness':255,'color_temp':1,'state':'On'}"
                                    };
-#include "WiFiManagerUser.h"                      //Define custon functions to hook into WiFiManager
+#include "WiFiManagerUser.h"                            //Define custon functions to hook into WiFiManager
 
 void setup() {
 #ifdef SerialEnabled
@@ -94,7 +94,7 @@ void setup() {
   attachInterrupt(SwitchA[1].Data.PIN_Button, ISR_A1, CHANGE);
   attachInterrupt(SwitchA[2].Data.PIN_Button, ISR_A2, CHANGE);
   attachInterrupt(SwitchA[3].Data.PIN_Button, ISR_A3, CHANGE);
-  if (RotationB != UNUSED) {                                    //Do not attach interrupt if this switch set is unused
+  if (RotationB != UNUSED) {                            //Do not attach interrupt if this switch set is unused
     attachInterrupt(SwitchB[0].Data.PIN_Button, ISR_B0, CHANGE);
     attachInterrupt(SwitchB[1].Data.PIN_Button, ISR_B1, CHANGE);
     attachInterrupt(SwitchB[2].Data.PIN_Button, ISR_B2, CHANGE);
@@ -108,33 +108,33 @@ void setup() {
 #ifdef SerialEnabled
     Serial.println("Waiting on a button(s) " + String(ButtonPressedID, BIN) + " before starting up");
 #endif //SerialEnabled
-    ButtonPressedID = 0;                            //Set to NOT pressed by default, will be overwritten
-    while (!TickEveryMS(50)) {}                     //Wait here for 50ms (so an error blink would be nice)
+    ButtonPressedID = 0;                                //Set to NOT pressed by default, will be overwritten
+    while (!TickEveryMS(50)) {}                         //Wait here for 50ms (so an error blink would be nice)
 
     //Returns the button states in bits; Like 0000<button1><b2><b3><b4> where 1 is HIGH and 0 is LOW
     //Example '00001001' = Buttons 1 and 4 are HIGH (Note we count from LSB)
     byte ButtonID = 0;
     for (byte i = 0; i < Amount_Buttons; i++) {
-      ButtonID = ButtonID << 1;                     //Move bits 1 to the left (it’s like *2)
+      ButtonID = ButtonID << 1;                         //Move bits 1 to the left (it’s like *2)
       Button_Time Value = SwitchA[i].CheckButton();
       if (Value.Pressed) {
-        ButtonID += 1;                              //Flag this button as on
+        ButtonID += 1;                                  //Flag this button as on
         digitalWrite(SwitchA[i].Data.PIN_LED, !digitalRead(SwitchA[i].Data.PIN_LED));
       } else
         digitalWrite(SwitchA[i].Data.PIN_LED, LOW);
     }
     if (RotationB != UNUSED) {
       for (byte i = 0; i < Amount_Buttons; i++) {
-        ButtonID = ButtonID << 1;                   //Move bits 1 to the left (it’s like *2)
+        ButtonID = ButtonID << 1;                       //Move bits 1 to the left (it’s like *2)
         Button_Time Value = SwitchB[i].CheckButton();
         if (Value.Pressed) {
-          ButtonID += 1;                            //Flag this button as on
+          ButtonID += 1;                                //Flag this button as on
           digitalWrite(SwitchB[i].Data.PIN_LED, !digitalRead(SwitchB[i].Data.PIN_LED));
         } else
           digitalWrite(SwitchB[i].Data.PIN_LED, LOW);
       }
     }
-    ButtonPressedID = ButtonID;                     //Get the button state, here 1 is HIGH in the form of '0000<Button 1><2><3><4> '
+    ButtonPressedID = ButtonID;                         //Get the button state, here 1 is HIGH in the form of '0000<Button 1><2><3><4> '
   }
   for (byte i = 0; i < Amount_Buttons; i++) {
     digitalWrite(SwitchA[i].Data.PIN_LED, LOW);     //Make sure all LED's are off
@@ -144,10 +144,6 @@ void setup() {
   //===========================================================================
   //Initialise server stuff
   //===========================================================================
-  server.on("/",                  WiFiManager_handle_Connect);    //Must be declared before "WiFiManager.Start()" for APMode
-  server.on("/setup",             WiFiManager_handle_Settings);   //Must be declared before "WiFiManager.Start()" for APMode
-  server.on("/ota",               OTA_handle_uploadPage);
-  server.on("/update", HTTP_POST, OTA_handle_update, OTA_handle_update2);
   server.on("/restart",           handle_Restart);
   server.on("/log",               handle_Log);
   server.onNotFound(              HandleNotFound);
@@ -161,6 +157,7 @@ void setup() {
 #endif //SerialEnabled
     ESP.restart();                //Restart the ESP
   }
+  WiFiManager.OTA_Enabled = false;
   WiFiManager.StartServer();      //Start the server
   //===========================================================================
   //Get Reset reason (This could be/is useful for power outage)
@@ -173,23 +170,8 @@ void setup() {
 }
 //===========================================================================
 void loop() {
-  if (OTA.Enabled) {
-    //==============================
-    //Set up mDNS responder     //https://github.com/espressif/arduino-esp32/blob/master/libraries/ESPmDNS/src/ESPmDNS.cpp
-    //==============================
-    static bool MDNSInit = true;                      //If mDNS needs to be init-ed
-    if (MDNSInit) {
-      MDNSInit = false;
-      bool MDNSStatus = MDNS.begin(Name);             //Start mDNS with the given domain name
-      if (MDNSStatus) MDNS.addService("http", "tcp", 80); //Add service to MDNS-SD
-#ifdef SerialEnabled
-      if (MDNSStatus) Serial.println("SE: mDNS responder started");
-      else Serial.println("SE: Error setting up MDNS responder!");
-#endif
-    }
-    //==============================
+  if (WiFiManager.OTA_Enabled) {
     BlinkEveryMs(LED_BUILTIN, 1000);                  //Blink every x MS to show OTA is on
-    server.handleClient();
   }
 
   static byte OldRotationB = RotationB;               //Check if a second switch is added (if a rotation is set)
@@ -216,7 +198,7 @@ void Check(Button_Time Value, MiLight Light, String Action, byte LEDpin, byte Bu
 #ifdef Speed_Log
   unsigned long StartMS = 0;
 #endif //Speed_Log
-  if (Value.StartPress) {                               //If button is just pressed in
+  if (Value.StartPress) {                        //If button is just pressed in
 #ifdef Speed_Log
     StartMS = millis();
 #endif //Speed_Log
@@ -224,27 +206,12 @@ void Check(Button_Time Value, MiLight Light, String Action, byte LEDpin, byte Bu
     for (int TryAgain = 3; TryAgain > 0; TryAgain--) {  //Where TryAgain is amount of tries tries to do
       byte Feedback = SetLight(Light, Action);
       switch (Feedback) {
-        case mi_UNDEF:        //Keep trying again
-
-          break;
-        case mi_DONE:
-          TryAgain = 0;                                 //  Do not try again
-          break;
-        case mi_HUB_OFFLINE:
-          TryAgain = 0;                                 //  Do not try again
-          break;
-        case mi_EXECUTION_ERROR:                        //If Json wrong format
-#ifdef SerialEnabled
-          Serial.println("Error in Json");
-#endif //SerialEnabled
-          TryAgain = 0;                                 //  Do not try again
-          break;
-        case mi_UNK:        //Keep trying again
-
-          break;
-        case mi_TIMEOUT:
-          TryAgain = 0;                                 //  Do not try again
-          break;
+        case mi_UNDEF:                          break;  //  Keep trying again
+        case mi_DONE:             TryAgain = 0; break;  //  Do not try again
+        case mi_HUB_OFFLINE:      TryAgain = 0; break;  //  Do not try again
+        case mi_EXECUTION_ERROR:  TryAgain = 0; break;  //If Json wrong format, Do not try again
+        case mi_UNK:                            break;  //  Keep trying again
+        case mi_TIMEOUT:          TryAgain = 0; break;  //  Do not try again
       }
     }
     if (LEDpin > 0) digitalWrite(LEDpin, LOW);          //If a LED pin was given; Set that buttons LED off
@@ -252,10 +219,7 @@ void Check(Button_Time Value, MiLight Light, String Action, byte LEDpin, byte Bu
     Log.Add("Command processing time (start to finisch)=" + String(millis() - StartMS) + "ms");
 #endif //Speed_Log
   } else if (Value.StartLongPress) {
-    if (ButtonID == 0) {
-      OTA.Enabled = !OTA.Enabled;                       //Toggle OTA on/off
-      WiFiManager.EnableSetup(OTA.Enabled);
-    }
+    WiFiManager.OTA_Enabled = !WiFiManager.OTA_Enabled;                         //Toggle OTA on/off
     if (LEDpin > 0) digitalWrite(LEDpin, LOW);          //If a LED pin was given; Set that buttons LED off
   }
   if (Value.PressedLong) {                              //If it is/was a long press

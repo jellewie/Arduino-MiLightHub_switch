@@ -34,12 +34,10 @@ There a lot of blinking patterns, but I tried to list them all here
 - (Main LED) will turn on when a long press (5000ms) is happening, will turn off when done
 
 # Button actions
-(Set of 4 buttons pressed on boot) Enable OTA and Settings menu 
 - (Button short press) execute action; send the data (saved in 'Commands#' which can be hardcoded or be set in SettingsPage) to the milight hub. This is done by default with feedback
 It stops after 5 failed tries, or 2 failed connections, or 1 if send Json is wrong
-- (Button 1 (ID0) long press) Start and enable OTA
-- (Button 2 (ID1) long press) Enable Settings menu (APMODE) though it's IP on its WIFI (will hide password by default), just reboot ESP when your done to disable it
-- (Button extreme long press) Hold any button for 10s to reboot the ESP
+- (Button long press) Hold any button for 3s and enable OTA+Web interface
+- (Button extreme long press) Hold any button for 15s to reboot the ESP
 
 # Images
 ![Working GIF](https://github.com/jellewie/Arduino-MiLightHub_switch/blob/master/Untitled%20Project.gif)

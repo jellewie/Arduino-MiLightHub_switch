@@ -65,8 +65,12 @@ byte SetLight(MiLight Light, String Content) {
 #endif //milight_Log
   if (Responcecode == 200)
     return mi_DONE;
-  if (Responcecode == 400)
+  if (Responcecode == 400) {
+#ifdef SerialEnabled
+    Serial.println("Error in Json");
+#endif //SerialEnabled
     return mi_EXECUTION_ERROR;
+  }
   return mi_UNK;
 }
 //===========================================================================
