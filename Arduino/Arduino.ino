@@ -49,8 +49,8 @@ char* APSSID = Name;                                            //If you want to
 #include "OTA.h"
 #include "functions.h"
 #include "miLight.h"
-#include "Button.h"
-const buttons SetA = {34, 21};                    //Only used for reference pin pares, not which command is connected to which pin
+#include "Button/Button.h"                              //https://github.com/jellewie/Arduino-Button
+const buttons SetA = {34, 21};                          //Only used for reference pin pares, not which command is connected to which pin
 const buttons SetB = {35, 19};
 const buttons SetC = {32, 18};
 const buttons SetD = {33,  5};
