@@ -52,16 +52,10 @@ const String UpdateWebpage = "https://github.com/jellewie/Arduino-MiLightHub_swi
 #include "functions.h"
 #include "miLight.h"
 #include "Button/Button.h"                                      //https://github.com/jellewie/Arduino-Button
-const buttons SetA = {34, 21};                                  //Only used for reference pin pares, not which command is connected to which pin
-const buttons SetB = {35, 19};
-const buttons SetC = {32, 18};
-const buttons SetD = {33,  5};
-const buttons SetE = {26, 23};
-const buttons SetF = {27, 22};
-const buttons SetG = {14,  4};
-const buttons SetH = {12, 15};
-Button SwitchA[4] = {SetA, SetB, SetC, SetD};                   //Bunch up the 4 buttons to be 1 switch set
-Button SwitchB[4] = {SetE, SetF, SetG, SetH};                   // ^
+
+Button SwitchA[4] = {{34, {_PIN_LED: 21}}, {35, {_PIN_LED: 19}}, {32, {_PIN_LED: 18}}, {33, {_PIN_LED: 5}}}; //Bunch up the 4 buttons to be 1 switch set (Only used for reference pin pares, not which command is connected to which pin)
+Button SwitchB[4] = {{26, {_PIN_LED: 23}}, {27, {_PIN_LED: 22}}, {14, {_PIN_LED: 4}}, {12, {_PIN_LED: 15}}}; // ^
+
 byte RotationA = NORMAL;                                        //SOFT_SETTING Rotation of the PCB seen from the case
 byte RotationB = UNUSED;                                        // ^           RIGHT=PCB 90° clockwise to case
 MiLight LightA = {"0xF001", "rgb_cct", 1};                      //SOFT_SETTING What light to control
@@ -92,15 +86,15 @@ void setup() {
   //===========================================================================
   //Attach interrupts to the button pins so we can response if they change
   //===========================================================================
-  attachInterrupt(SwitchA[0].Data.PIN_Button, ISR_A0, CHANGE);
-  attachInterrupt(SwitchA[1].Data.PIN_Button, ISR_A1, CHANGE);
-  attachInterrupt(SwitchA[2].Data.PIN_Button, ISR_A2, CHANGE);
-  attachInterrupt(SwitchA[3].Data.PIN_Button, ISR_A3, CHANGE);
+  attachInterrupt(SwitchA[0].PIN_Button, ISR_A0, CHANGE);
+  attachInterrupt(SwitchA[1].PIN_Button, ISR_A1, CHANGE);
+  attachInterrupt(SwitchA[2].PIN_Button, ISR_A2, CHANGE);
+  attachInterrupt(SwitchA[3].PIN_Button, ISR_A3, CHANGE);
   if (RotationB != UNUSED) {                                    //Do not attach interrupt if this switch set is unused
-    attachInterrupt(SwitchB[0].Data.PIN_Button, ISR_B0, CHANGE);
-    attachInterrupt(SwitchB[1].Data.PIN_Button, ISR_B1, CHANGE);
-    attachInterrupt(SwitchB[2].Data.PIN_Button, ISR_B2, CHANGE);
-    attachInterrupt(SwitchB[3].Data.PIN_Button, ISR_B3, CHANGE);
+    attachInterrupt(SwitchB[0].PIN_Button, ISR_B0, CHANGE);
+    attachInterrupt(SwitchB[1].PIN_Button, ISR_B1, CHANGE);
+    attachInterrupt(SwitchB[2].PIN_Button, ISR_B2, CHANGE);
+    attachInterrupt(SwitchB[3].PIN_Button, ISR_B3, CHANGE);
   }
   //===========================================================================
   //Wait for all buttons to be NOT pressed
@@ -121,9 +115,9 @@ void setup() {
       Button_Time Value = SwitchA[i].CheckButton();
       if (Value.Pressed) {
         ButtonID += 1;                                          //Flag this button as on
-        digitalWrite(SwitchA[i].Data.PIN_LED, !digitalRead(SwitchA[i].Data.PIN_LED));
+        digitalWrite(SwitchA[i].PIN_LED, !digitalRead(SwitchA[i].PIN_LED));
       } else
-        digitalWrite(SwitchA[i].Data.PIN_LED, LOW);
+        digitalWrite(SwitchA[i].PIN_LED, LOW);
     }
     if (RotationB != UNUSED) {
       for (byte i = 0; i < Amount_Buttons; i++) {
@@ -131,17 +125,17 @@ void setup() {
         Button_Time Value = SwitchB[i].CheckButton();
         if (Value.Pressed) {
           ButtonID += 1;                                        //Flag this button as on
-          digitalWrite(SwitchB[i].Data.PIN_LED, !digitalRead(SwitchB[i].Data.PIN_LED));
+          digitalWrite(SwitchB[i].PIN_LED, !digitalRead(SwitchB[i].PIN_LED));
         } else
-          digitalWrite(SwitchB[i].Data.PIN_LED, LOW);
+          digitalWrite(SwitchB[i].PIN_LED, LOW);
       }
     }
     ButtonPressedID = ButtonID;                                 //Get the button state, here 1 is HIGH in the form of '0000<Button 1><2><3><4> '
   }
   for (byte i = 0; i < Amount_Buttons; i++) {
-    digitalWrite(SwitchA[i].Data.PIN_LED, LOW);                 //Make sure all LED's are off
+    digitalWrite(SwitchA[i].PIN_LED, LOW);                      //Make sure all LED's are off
     if (RotationB != UNUSED)
-      digitalWrite(SwitchB[i].Data.PIN_LED, LOW);               //Make sure all LED's are off
+      digitalWrite(SwitchB[i].PIN_LED, LOW);                    //Make sure all LED's are off
   }
   //===========================================================================
   //Initialise server stuff
@@ -188,9 +182,9 @@ void loop() {
   }
 
   for (byte i = 0; i < Amount_Buttons; i++) {
-    Check(SwitchA[i].CheckButton(), LightA, CommandsA[RotateButtonID(RotationA, i)], SwitchA[i].Data.PIN_LED, RotateButtonID(RotationA, i));
+    Check(SwitchA[i].CheckButton(), LightA, CommandsA[RotateButtonID(RotationA, i)], SwitchA[i].PIN_LED, RotateButtonID(RotationA, i));
     if (RotationB != UNUSED)
-      Check(SwitchB[i].CheckButton(), LightB, CommandsB[RotateButtonID(RotationB, i)], SwitchB[i].Data.PIN_LED, RotateButtonID(RotationB, i));
+      Check(SwitchB[i].CheckButton(), LightB, CommandsB[RotateButtonID(RotationB, i)], SwitchB[i].PIN_LED, RotateButtonID(RotationB, i));
   }
 }
 //===========================================================================
