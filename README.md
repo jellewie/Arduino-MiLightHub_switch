@@ -43,3 +43,10 @@ It stops after 5 failed tries, or 2 failed connections, or 1 if send Json is wro
 ![Working GIF](https://github.com/jellewie/Arduino-MiLightHub_switch/blob/master/Untitled%20Project.gif)
 ![buttons to the wall](https://raw.githubusercontent.com/jellewie/Arduino-MiLightHub_switch/master/3D/Single.jpg)
 ![Double buttons settup](https://raw.githubusercontent.com/jellewie/Arduino-MiLightHub_switch/master/3D/Double.jpg)
+
+# How to update
+1. Enable server: Press button 1 for (Button long press)
+2. Go to page: IP/ota where 'IP' is its IP
+3. Download the update, click on the link on the ota page, and download the latest '.bin' file
+4. Upload the file, select the file and upload it
+after 100% it applies it and reboots
