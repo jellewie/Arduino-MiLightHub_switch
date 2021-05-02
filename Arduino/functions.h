@@ -35,9 +35,6 @@ String ConvertRotationToString(byte IN) {
     return RotationNames[IN];
   return "UNK";
 }
-
-
-
 void HandleNotFound() {
 #ifdef SerialEnabled
   Serial.println("Method: " + String(server.method()) + " URI: " + server.uri());

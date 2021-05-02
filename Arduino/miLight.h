@@ -12,66 +12,22 @@ struct State_rgb_cct {
 };
 char MiLight_IP[16] = "192.168.255.255";    //http://milight-hub.local/
 
-enum {mi_UNDEF, mi_DONE, mi_HUB_OFFLINE, mi_EXECUTION_ERROR, mi_UNK, mi_TIMEOUT};
-byte SetLight(MiLight Light, String Content) {
-  /*Return Value:
-    1= Done (responce code 200)
-    2= #ERROR Can not connect to HUB
-    3= responce code 400 (Execution error)
-    4= unknown error
-    5= Timeout recieving responce code
-  */
-  WiFiManager.CheckAndReconnectIfNeeded(false);
+byte SetLight(MiLight Light, String JsonContent) {
   String path = "/gateways/" + Light.device_id + "/" + Light.remote_type + "/" + String(Light.group_id);
-  WiFiClient client;
-  client.setTimeout(1000);
-  if (!client.connect(MiLight_IP, 80)) {            //(Try) connect to hub
+  byte Answer = WiFiManager.DoRequest(MiLight_IP, 80, path, JsonContent);
+
 #ifdef milight_Log
-    Log.Add("ML: #ERROR Cant connect to HUB '" + String(MiLight_IP) + "" + "'");
-#endif //milight_Log
-    Blink_Amount(LED_BUILTIN, 200, 10);             //Can't connect to hub: Just blink a bit to show this error
-    return mi_HUB_OFFLINE;                          //Stop here, no reason to move on
+  Log.Add("ML: PUT " + path + " HTTP/1.1" + "_Host: " + String(MiLight_IP) + ":80 _Data=" + JsonContent);
+  switch (Answer) {
+    case REQ_UNK:               Log.Add("ML: Unknown error (responce out of range)" + String(Answer));  break;
+    case REQ_HUB_CONNECT_ERROR: Log.Add("ML: Cant connect to HUB '" + String(MiLight_IP) + "" + "'");   break;
+    case REQ_TIMEOUT:           Log.Add("ML: Timeout recieving responce code");                         break;
+    case REQ_PAGE_NOT_FOUND:    Log.Add("ML: Page not found (responce code 404)");                      break;
+    case REQ_SETUP_REQUIRED:    Log.Add("ML: Manual WiFi settup required");                             break;
+    default:                    Log.Add("ML: UNK Responcecode=" + String(Answer));                      break;
   }
-#ifdef milight_Log
-  Log.Add("ML: PUT " + path + " HTTP/1.1" + "_Host: " + String(MiLight_IP) + "_Data=" + Content);
 #endif //milight_Log
-  client.println("PUT " + path + " HTTP/1.1");
-  client.println("Content-Length: " + String(Content.length()));
-  client.println("Content-Type: application/json");
-  client.println();                                         //Terminate headers with a blank line
-  client.print(Content);
-  //Try to look for a responce code 'HTTP/1.1 200 OK' = 200
-  int connectLoop = 2500;                                   //550ms was the average responce time at tests
-  int Responcecode  = 0;
-  while (client.connected()) {
-    while (client.available()) {
-      byte recieved = client.read();
-      if (recieved == 0x20) {                               //If "HTTP/1.1" is paste and we now have a SPACE
-        recieved = client.read();                           //Purge space
-        while (recieved != 0x20) {                          //While we read numbers and not a SPACE
-          Responcecode = Responcecode * 10 + (recieved - 0x30); //Convert byte to number and put it in
-          recieved = client.read();                         //Read new byte
-        }
-        client.stop();                                      //Stop, we already have the Responce code
-      }
-    }
-    delay(1);               //Loop = 1+MS
-    connectLoop--;          //Remove one from loop counter
-    if (connectLoop <= 0)   //If loop counter = 0
-      return mi_TIMEOUT;             //Stop, we had a timeout
-  }
-#ifdef milight_Log
-  Log.Add("ML: Responcecode=" + String(Responcecode));
-#endif //milight_Log
-  if (Responcecode == 200)
-    return mi_DONE;
-  if (Responcecode == 400) {
-#ifdef SerialEnabled
-    Serial.println("Error in Json");
-#endif //SerialEnabled
-    return mi_EXECUTION_ERROR;
-  }
-  return mi_UNK;
+  return Answer;
 }
 //===========================================================================
 //State_rgb_cct GetLight(MiLight Light) {

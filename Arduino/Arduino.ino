@@ -10,7 +10,7 @@
 //#define SerialEnabled
 //#define Button_SerialEnabled
 //#define Button_SerialEnabled_CheckButton
-#define Logging
+//#define Logging
 
 #ifdef SerialEnabled
 #define Logging
@@ -24,25 +24,7 @@
 //Convert_Log
 #endif //Logging
 
-char Name[16] = "milight-switch";                               //The mDNS, WIFI APmode SSID name. This requires a restart to apply, can only be 16 characters long, and special characters are not recommended.
-#define WiFiManagerUser_Set_Value_Defined                       //Define we want to hook into WiFiManager
-#define WiFiManagerUser_Get_Value_Defined                       //^
-#define WiFiManagerUser_Status_Start_Defined                    //^
-#define WiFiManagerUser_Status_Done_Defined                     //^
-#define WiFiManagerUser_Status_Blink_Defined                    //^
-#define WiFiManagerUser_Status_StartAP_Defined                  //^
-#define WiFiManagerUser_HandleAP_Defined                        //^
-#define WiFiManagerUser_Name_Defined
-#define WiFiManagerUser_VariableNames_Defined           //Define that we want to use the custom user variables (Dont forget to settup WiFiManager_VariableNames and WiFiManager_Settings)
-const String WiFiManager_VariableNames[] {"SSID", "Password", "Name", "MiLight_IP",
-  "Button A1", "Button A2", "Button A3", "Button A4", "LightA ID", "LightA type", "LightA group", "Rotation A",
-  "Button B1", "Button B2", "Button B3", "Button B4", "LightB ID", "LightB type", "LightB group", "Rotation B"
-};
-const int EEPROM_size = 512;                                    //Max Amount of chars for 'SSID(16) + PASSWORD(16) + extra custom vars(?) +1(NULL)' defaults to 33
-#define WiFiManager_mDNS
-#define WiFiManager_OTA
-#define WiFiManagerUser_UpdateWebpage_Defined
-const String UpdateWebpage = "https://github.com/jellewie/Arduino-MiLightHub_switch/releases";
+#include "WiFiManagerBefore.h"                                  //Define what options to use/include or to hook into WiFiManager
 #include "WiFiManager/WiFiManager.h"                            //Includes <WiFi> and <WebServer.h> and setups up 'WebServer server(80)' if needed      https://github.com/jellewie/Arduino-WiFiManager
 
 #include <WiFiClient.h>                                         //Needed for sending data to devices
@@ -71,7 +53,7 @@ String CommandsB[Amount_Buttons] = {"{'commands':['toggle']}",                  
                                     "{'brightness':255,'color_temp':999,'state':'On'}",
                                     "{'brightness':255,'color_temp':1,'state':'On'}"
                                    };
-#include "WiFiManagerUser.h"                                    //Define custon functions to hook into WiFiManager
+#include "WiFiManagerLater.h"                                   //Define options of WiFiManager (can also be done before), but WiFiManager can also be called here (example for DoRequest)
 
 void setup() {
 #ifdef SerialEnabled
@@ -140,7 +122,6 @@ void setup() {
   //===========================================================================
   //Initialise server stuff
   //===========================================================================
-  server.on("/restart",           handle_Restart);
   server.on("/log",               handle_Log);
   server.onNotFound(              HandleNotFound);
   //===========================================================================
@@ -203,12 +184,13 @@ void Check(Button_Time Value, MiLight Light, String Action, byte LEDpin, byte Bu
     for (int TryAgain = 3; TryAgain > 0; TryAgain--) {          //Where TryAgain is amount of tries tries to do
       byte Feedback = SetLight(Light, Action);
       switch (Feedback) {
-        case mi_UNDEF:                          break;          //  Keep trying again
-        case mi_DONE:             TryAgain = 0; break;          //  Do not try again
-        case mi_HUB_OFFLINE:      TryAgain = 0; break;          //  Do not try again
-        case mi_EXECUTION_ERROR:  TryAgain = 0; break;          //If Json wrong format, Do not try again
-        case mi_UNK:                            break;          //  Keep trying again
-        case mi_TIMEOUT:          TryAgain = 0; break;          //  Do not try again
+        case REQ_UNK:                               break;      //Keep trying again
+        case REQ_SUCCES:              TryAgain = 0; break;      //We have succeeded, Do not try again
+        case REQ_HUB_CONNECT_ERROR:   TryAgain = 0; break;      //The hub is unreachable, Do not try again
+        case REQ_TIMEOUT:             TryAgain = 0; break;      //The hub doesn't send a responcecode back in time, some unknowns, so do not try again
+        case REQ_PAGE_NOT_FOUND:      TryAgain = 0; break;      //If Json wrong format, Do not try again
+        case REQ_SETUP_REQUIRED:      TryAgain = 0; break;      //If Json wrong format, Do not try again
+        default:                      TryAgain = 0; break;      //Some uncatched error, Do not try again
       }
     }
     if (LEDpin > 0) digitalWrite(LEDpin, LOW);                  //If a LED pin was given; Set that buttons LED off
@@ -260,18 +242,6 @@ byte RotateButtonID(byte Rotation, byte i) {
   return 0;
 }
 //===========================================================================
-
-void handle_Restart() {
-#ifdef SerialEnabled
-  Serial.println("handle_Restart");
-#endif //SerialEnabled
-  server.send(200, "text/html", "OK, restarting...");
-  for (byte i = 50; i > 0; i--) {                       //Add some delay here, to send feedback to the client, i is delay in MS to still wait
-    server.handleClient();
-    delay(1);
-  }
-  ESP.restart();
-}
 void ISR_A0() {
   SwitchA[0].Pinchange();
 }

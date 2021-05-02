@@ -1,3 +1,19 @@
+# ==========
+
+# Depricated!
+
+# ==========
+
+This project is stalled, and here for archieving reasons.
+Altough not hardware compatible (buttons inversed) and not softSettings compatible (the order and they have changed), it is recommened to update if required. Do not start new projects with this repo this one is unsuported from now on!!
+[smart-home-switch](https://github.com/jellewie/Arduino-smart-home-switch)
+
+# ==========
+
+
+
+
+
 # Arduino-MiLightHub_switch
  MilightHub https://github.com/sidoh/esp8266_milight_hub
 

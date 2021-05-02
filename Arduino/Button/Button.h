@@ -35,6 +35,7 @@ struct Button_Time {
 };
 class Button {
   private:                                              //Private variables/functions
+	bool HighState = HIGH;
     bool StartLongFlagged;
     bool StartReleaseFlagged = true;
     unsigned long ButtonStartTime;                      //the button pressed time (to calculate long press)

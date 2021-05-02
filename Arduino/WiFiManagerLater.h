@@ -1,23 +1,10 @@
 /* Written by JelleWho https://github.com/jellewie
    https://github.com/jellewie/Arduino-WiFiManager
-
-  These are some examples how to 'hook' functions with code into the WiFiManager.
-  This file and all functions are not required, but when defined before '#include "WiFiManagerUser.h"' they will be hooked in to WiFiManager
-  if you want to declair functions after including WiFiManager, uses a 'extern <function name>' to declair a dummy here, so the hook will be made, but will be hooked to a later (extern if I may say) declaration
-
-  NOTES
-   DO NOT USE char(") in any of input stings on the webpage, use char(') if you need it. char(") will be replaced
-
-  HOW TO ADD CUSTOM VALUES
-   -"WiFiManagerUser_VariableNames_Defined" define this, and ass custom names for the values
-   -"WiFiManager_VariableNames"  Add the description name of the value to get/set to this list
-   -"EEPROM_size"     [optional] Make sure it is big enough for your needs, SIZE_SSID+SIZE_PASS+YourValues (1 byte = 1 character)
-   -"Set_Value"       Set the action on what to do on startup with this value
-   -"Get_Value"       [optional] Set the action on what to fill in in the boxes in the 'AP settings portal'
-*/
+ */
+//===========================================================================
+// Things that can/need to be defined after including "WiFiManager.h"
 //===========================================================================
 const byte Pin_LED  = LED_BUILTIN;                              //Just here for some examples, It's the LED to give feedback on (like blink on error)
-//===========================================================================
 bool WiFiManagerUser_Set_Value(byte ValueID, String Value) {
   switch (ValueID) {                                            //Note the numbers are shifted from what is in memory, 0 is the first user value
     case 0:
